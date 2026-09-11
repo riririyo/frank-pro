@@ -1,0 +1,30 @@
+# Supabase CLI 設定
+# `supabase init` で生成されるファイルの最小構成。
+# 実際のプロジェクトIDは `supabase link --project-ref <ref>` で紐付ける。
+
+project_id = "frank-pro"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:8788"
+# 本番では frank pro の実ドメインに変更する
+additional_redirect_urls = []
+
+[functions]
+[functions.sign-upload]
+verify_jwt = true
+
+[functions.submit-comment]
+verify_jwt = false

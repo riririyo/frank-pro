@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>投稿ガイドライン — frank pro</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2722%27 fill=%27%230071e3%27/%3E%3Ctext x=%2750%27 y=%2568%27 font-size=%2755%27 font-family=%27-apple-system,sans-serif%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3Ef%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="index.html">frank pro</a>
+    <div class="header-actions">
+      <a class="btn" href="index.html">一覧に戻る</a>
+    </div>
+  </header>
+
+  <main class="doc-page">
+    <div class="doc-note">
+      これはドラフトです。収益化・法人化・広告のいずれかを行う段階で、必ず弁護士の確認を受けてください。
+    </div>
+<h1 id="投稿ガイドライン叩き台">投稿ガイドライン（叩き台）</h1>
+<p>作成日：2026-09-11 / ステータス：ドラフト</p>
+<blockquote>
+<p>frank proは投稿前の審査を行いません。 その代わり、機械的に判定できる条件を先に明示し、満たさない作品は投稿時点で弾きます。 このページは「何が通り、何が通らないか」を投稿前に把握するためのものです。</p>
+</blockquote>
+<hr />
+<h2 id="技術要件満たさないと投稿できません">1. 技術要件（満たさないと投稿できません）</h2>
+<h3 id="html-1ファイルで完結していること">1-1. HTML 1ファイルで完結していること</h3>
+<pre><code>❌ index.html + style.css + game.js + sprite.png
+✅ index.html （CSS・JS・画像をすべて内包）</code></pre>
+<p>画像や音は <strong>data URI</strong>（<code>data:image/png;base64,...</code>）で埋め込んでください。 外部URLを参照した画像・フォント・音源は<strong>読み込まれません</strong>（次項の理由による）。</p>
+<h3 id="外部への通信ができません">1-2. 外部への通信ができません</h3>
+<p>配信時に Content Security Policy を適用しており、作品からの外部通信は ブラウザがすべてブロックします。以下はすべて動きません。</p>
+<ul>
+<li><code>fetch</code> / <code>XMLHttpRequest</code> / <code>WebSocket</code> / <code>EventSource</code> / <code>navigator.sendBeacon</code></li>
+<li>外部URLを指す <code>&lt;img src&gt;</code> <code>&lt;link href&gt;</code> <code>&lt;script src&gt;</code> <code>&lt;audio src&gt;</code> <code>&lt;video src&gt;</code></li>
+<li>Google Fonts などのCDN</li>
+<li><code>&lt;form&gt;</code> の送信</li>
+</ul>
+<p>CDNのライブラリを使っている場合は、ソースを本文に貼り付けてください。</p>
+<h3 id="localstorage-sessionstorage-cookie-が使えません">1-3. localStorage / sessionStorage / Cookie が使えません</h3>
+<p><strong>これが一番多いつまずきです。</strong></p>
+<p>作品は隔離された環境（opaque origin）で実行されるため、 <code>localStorage</code> に触ろうとした瞬間に <strong>SecurityError が発生して作品全体が停止</strong>します。 真っ白な画面になる原因のほとんどはこれです。</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ❌ これだけで作品が止まる</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>localStorage<span class="op">.</span><span class="fu">setItem</span>(<span class="st">&#39;highScore&#39;</span><span class="op">,</span> score)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">// ✅ どうしても書くなら必ず囲む</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> { localStorage<span class="op">.</span><span class="fu">setItem</span>(<span class="st">&#39;highScore&#39;</span><span class="op">,</span> score) } <span class="cf">catch</span> (e) { <span class="co">/* 無視する */</span> }</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">// ✅✅ 推奨：メモリ上の変数で持つ</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> highScore <span class="op">=</span> <span class="dv">0</span></span></code></pre></div>
+<p>セーブ機能・ハイスコア保存は現在サポートしていません。 リロードで状態が消える前提で設計してください。</p>
+<h3 id="ファイルサイズ上限5mb">1-4. ファイルサイズ上限：5MB</h3>
+<p>画像を data URI にすると容量が跳ねます。超える場合は、 解像度を落とす、色数を減らす、PNGをJPEGやWebPに変えるなどで調整してください。</p>
+<h3 id="スマホの縦持ちで遊べること">1-5. スマホの縦持ちで遊べること</h3>
+<p><strong>投稿者の多くはPCで制作するため、PC前提の操作になりがちです。</strong> 閲覧者の大半はスマホから来ます。</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>使えるもの</th>
+<th>使えないもの</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>タップ、スワイプ、長押し、ドラッグ</td>
+<td>キーボード入力（WASD、矢印キー、スペース）</td>
+</tr>
+<tr class="even">
+<td>端末の傾き（DeviceOrientation）</td>
+<td>マウスホバー、右クリック</td>
+</tr>
+<tr class="odd">
+<td>画面上に描いたボタン</td>
+<td>物理キーが前提の操作</td>
+</tr>
+</tbody>
+</table>
+<p>投稿画面には<strong>スマホと同じ縦長サイズのプレビュー枠</strong>があります。 投稿ボタンを押す前に、必ずそこで一度遊んでみてください。</p>
+<p>PC専用の作品も投稿できますが、説明文に明記してください。</p>
+<h3 id="その他">1-6. その他</h3>
+<ul>
+<li><code>alert()</code> <code>confirm()</code> <code>prompt()</code> は動作しません（ブロックされます）</li>
+<li>カメラ、マイク、位置情報は利用できません</li>
+<li>全画面API、ポインターロックは利用できます</li>
+<li>重い処理は閲覧者の端末で動きます。発熱・電池消費に配慮してください</li>
+</ul>
+<hr />
+<h2 id="内容の要件">2. 内容の要件</h2>
+<h3 id="権利について">2-1. 権利について</h3>
+<p>投稿できるのは、<strong>あなたが権利を持っているか、正当に使用許諾を得ているもの</strong>だけです。</p>
+<p>よくある見落とし：</p>
+<ul>
+<li>既存ゲームのスプライト・BGM・効果音を流用している</li>
+<li>実在のキャラクター、ロゴ、商標が画面に出ている</li>
+<li>フリー素材だが、ライセンスに再配布不可やクレジット表記義務がある</li>
+<li>AIで生成した画像だが、特定の作品や人物が明確に再現されている</li>
+</ul>
+<p>素材のライセンスを確認し、クレジット表記が必要なものは説明文に記載してください。</p>
+<h3 id="投稿できないもの">2-2. 投稿できないもの</h3>
+<ul>
+<li>第三者の権利を侵害する作品</li>
+<li>マルウェア、閲覧者の端末に意図しない損害を与えるコード</li>
+<li><strong>本物のサービスを模したログイン画面・決済画面・支援要請画面</strong> （ネタであっても不可。外部通信を遮断していても、 画面を撮影して別の場所で使われる危険があるため）</li>
+<li>過度に暴力的・性的な内容、差別を助長する内容</li>
+<li>自殺・自傷を誘引する内容</li>
+<li>法令に違反する内容</li>
+</ul>
+<h3 id="年齢層について">2-3. 年齢層について</h3>
+<p>年齢確認の仕組みはありません。<strong>子どもが開く前提で作ってください。</strong> 不安がある内容は、タイトルと説明文の冒頭に注意書きを入れてください。</p>
+<hr />
+<h2 id="投稿時の自動チェック">3. 投稿時の自動チェック</h2>
+<p>投稿ボタンを押すと、以下が自動で判定されます。</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>項目</th>
+<th>判定</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ファイル形式</td>
+<td><code>.html</code> のみ</td>
+</tr>
+<tr class="even">
+<td>ファイルサイズ</td>
+<td>5MB以下</td>
+</tr>
+<tr class="odd">
+<td>外部リソース参照</td>
+<td>検出した場合は警告（動作しない旨を表示。投稿自体は可能）</td>
+</tr>
+<tr class="even">
+<td>localStorage の直接使用</td>
+<td>検出した場合は警告</td>
+</tr>
+<tr class="odd">
+<td>縦長プレビューでの動作確認</td>
+<td>一度も再生していない場合は確認ダイアログ</td>
+</tr>
+</tbody>
+</table>
+<p>外部リソースと localStorage の検出は<strong>警告であって拒否ではありません</strong>。 コードを読んで判定する方式は、文字列を分割されれば回避できるため、 これを合否の基準にはしていません。実際の遮断は実行環境側で行っています。 警告は「動かない作品を出す前に気づいてもらう」ためのものです。</p>
+<hr />
+<h2 id="投稿後">4. 投稿後</h2>
+<h3 id="編集と削除">4-1. 編集と削除</h3>
+<p>投稿した作品はいつでも差し替え・非公開・削除ができます。 差し替えても、アクセス数・評価・コメントは引き継がれます。</p>
+<h3 id="コメント">4-2. コメント</h3>
+<p>コメントはログインなしで誰でも書けます。 <strong>自分の作品に付いたコメントは、作者が個別に非表示にできます。</strong> 対応に困る書き込みがあった場合は、非表示にした上で通報してください。</p>
+<h3 id="一覧での並び順">4-3. 一覧での並び順</h3>
+<p>「評価率」の並び順は、票が少ないうちはサイト全体の平均に寄る計算をしています。 1票だけの満点が首位に来ないようにするためで、票が集まるほど その作品自身の平均点に近づきます。</p>
+<p>投稿直後に評価率が中位に見えるのは正常な挙動です。</p>
+<h3 id="削除される場合">4-4. 削除される場合</h3>
+<p>以下に該当すると運営者が判断した場合、事前の通知なく非公開になることがあります。</p>
+<ul>
+<li>本ガイドラインの「2. 内容の要件」に反する場合</li>
+<li>権利者から申立てがあった場合</li>
+<li>閲覧者の安全上、緊急に止める必要がある場合</li>
+</ul>
+<p>異議がある場合は【連絡先】までご連絡ください。</p>
+<hr />
+<h2 id="投稿前チェックリスト">5. 投稿前チェックリスト</h2>
+<pre><code>□ HTML 1ファイルにまとまっている
+□ 外部URLの読み込みがない（画像・フォント・音・ライブラリすべて）
+□ localStorage / Cookie を使っていない（または try-catch で囲んである）
+□ 5MB以下
+□ 縦長プレビューで最後まで遊べた
+□ タップとスワイプだけで操作できる（できない場合は説明文に明記した）
+□ 使った素材のライセンスを確認した
+□ 権利者のあるキャラクター・ロゴ・音源が入っていない</code></pre>
+<hr />
+
+  </main>
+
+  <footer class="site-footer">
+    <a href="guidelines.html">投稿ガイドライン</a>
+    <a href="terms.html">利用規約</a>
+  </footer>
+</body>
+</html>

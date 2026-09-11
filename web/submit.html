@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>投稿する — frank pro</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2722%27 fill=%27%230071e3%27/%3E%3Ctext x=%2750%27 y=%2568%27 font-size=%2755%27 font-family=%27-apple-system,sans-serif%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3Ef%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="index.html">frank pro</a>
+    <div class="header-actions">
+      <a class="btn" href="guidelines.html">投稿ガイドライン</a>
+    </div>
+  </header>
+
+  <main class="form-page">
+    <h1>作品を投稿する</h1>
+    <p class="form-hint">
+      投稿前に <a href="guidelines.html">投稿ガイドライン</a> を確認してください。
+      特に「localStorageが使えない」点は見落としがちです。
+    </p>
+
+    <form id="submit-form">
+      <div class="form-field">
+        <label for="title-input">タイトル</label>
+        <input id="title-input" type="text" maxlength="100" required />
+      </div>
+
+      <div class="form-field">
+        <label for="description-input">説明文</label>
+        <textarea id="description-input" rows="4" maxlength="2000"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="file-input">作品ファイル（HTML 1ファイル・5MB以下）</label>
+        <input id="file-input" type="file" accept=".html,text/html" required />
+        <div id="upload-warnings"></div>
+      </div>
+
+      <div class="form-field">
+        <label>縦持ちプレビュー（スマホと同じ条件で確認してください）</label>
+        <div class="mobile-preview">
+          <iframe id="mobile-preview-frame" sandbox="allow-scripts allow-pointer-lock"></iframe>
+        </div>
+        <p id="preview-hint" class="form-hint">まずファイルを選択してください。</p>
+      </div>
+
+      <div class="form-field">
+        <label>投稿前チェックリスト</label>
+        <div class="checklist">
+          <label><input type="checkbox" /> HTML 1ファイルにまとまっている</label>
+          <label><input type="checkbox" /> 外部URLの読み込みがない（画像・フォント・音・ライブラリすべて）</label>
+          <label><input type="checkbox" /> localStorage / Cookie を使っていない（または try-catch で囲んである）</label>
+          <label><input type="checkbox" /> 縦長プレビューで最後まで遊べた</label>
+          <label><input type="checkbox" /> タップとスワイプだけで操作できる（できない場合は説明文に明記した）</label>
+          <label><input type="checkbox" /> 使った素材のライセンスを確認した。権利者のあるキャラクター・ロゴ・音源が入っていない</label>
+        </div>
+      </div>
+
+      <button id="submit-btn" type="submit" class="btn btn-primary">投稿する</button>
+    </form>
+  </main>
+
+  <script type="module">
+    import { initSubmitPage } from "./js/submit.js";
+    initSubmitPage();
+  </script>
+</body>
+</html>

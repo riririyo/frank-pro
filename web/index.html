@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>frank pro</title>
+  <meta name="description" content="誰でも即投稿、一覧からワンタップで即プレイ。HTMLゲーム・プロダクトの投稿プラットフォーム。" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2722%27 fill=%27%230071e3%27/%3E%3Ctext x=%2750%27 y=%2568%27 font-size=%2755%27 font-family=%27-apple-system,sans-serif%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3Ef%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="index.html">frank pro</a>
+    <div class="header-actions">
+      <button id="random-play-btn" class="btn" title="適当に遊ぶ">🎲 適当に遊ぶ</button>
+      <div id="auth-slot"></div>
+    </div>
+  </header>
+
+  <nav class="sort-tabs" id="sort-tabs"></nav>
+
+  <main class="work-grid" id="work-grid">
+    <div class="loading-state">読み込み中…</div>
+  </main>
+
+  <footer class="site-footer">
+    <a href="guidelines.html">投稿ガイドライン</a>
+    <a href="terms.html">利用規約</a>
+  </footer>
+
+  <!-- 作品プレイヤー -->
+  <div class="player-overlay" id="player-overlay" hidden>
+    <div class="player-topbar">
+      <span class="player-title" id="player-title"></span>
+      <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
+    </div>
+    <div class="player-frame-wrap" id="player-frame-wrap">
+      <!-- iframeはJSで動的に生成・破棄する（player.js） -->
+    </div>
+    <div class="player-sheet">
+      <div id="player-rating"></div>
+      <div id="player-comments"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initAuthHeader } from "./js/auth.js";
+    import { initListing } from "./js/listing.js";
+    import { initPlayer } from "./js/player.js";
+    import { initRandomButton } from "./js/random.js";
+
+    initAuthHeader();
+    initListing();
+    initPlayer();
+    initRandomButton();
+  </script>
+</body>
+</html>

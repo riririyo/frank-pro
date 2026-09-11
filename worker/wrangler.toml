@@ -1,0 +1,16 @@
+name = "frank-pro-works"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# 配信ドメインはサイト本体と分ける（docs/security-design.md 1-1節）。
+# 例: works.frank.pro をこのWorkerにルーティングする
+# routes = [
+#   { pattern = "works.frank.pro/*", zone_name = "frank.pro" }
+# ]
+
+[[r2_buckets]]
+binding = "WORKS_BUCKET"
+bucket_name = "frank-pro-works"
+
+[vars]
+FRAME_ANCESTOR = "https://frank.pro"
