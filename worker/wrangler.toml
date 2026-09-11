@@ -2,14 +2,6 @@ name = "frank-pro-works"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
-# 配信ドメインはサイト本体と分ける（docs/security-design.md 1-1節）。
-# 例: works.frank.pro をこのWorkerにルーティングする
-# routes = [
-#   { pattern = "works.frank.pro/*", zone_name = "frank.pro" }
-# ]
-
 [vars]
 FRAME_ANCESTOR = "https://frank.pro"
-# Supabase Storageの公開バケットURL。<project-ref>を実際の値に差し替える
-# 例: https://xxxxxxxx.supabase.co/storage/v1/object/public/works
-SUPABASE_STORAGE_BASE_URL = "https://YOUR-PROJECT-REF.supabase.co/storage/v1/object/public/works"
+SUPABASE_STORAGE_BASE_URL = "https://tvaadeaojsolxsmmyznz.supabase.co/storage/v1/object/public/works"
