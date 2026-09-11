@@ -3,5 +3,5 @@ main = "src/index.js"
 compatibility_date = "2026-01-01"
 
 [vars]
-FRAME_ANCESTOR = "https://frank.pro"
+FRAME_ANCESTOR = "https://frank-pro.pages.dev"
 SUPABASE_STORAGE_BASE_URL = "https://tvaadeaojsolxsmmyznz.supabase.co/storage/v1/object/public/works"
