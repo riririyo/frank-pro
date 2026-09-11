@@ -149,12 +149,12 @@ async function handleSubmit({ submitBtn }) {
     const signJson = await signRes.json();
     if (!signRes.ok) throw new Error(signJson.error || "アップロード準備に失敗しました");
 
-    const putRes = await fetch(signJson.upload_url, {
-      method: "PUT",
-      headers: { "Content-Type": signJson.content_type },
-      body: selectedFile,
-    });
-    if (!putRes.ok) throw new Error("ファイルのアップロードに失敗しました");
+    const { error: uploadError } = await supabase.storage
+      .from(signJson.bucket)
+      .uploadToSignedUrl(signJson.path, signJson.token, selectedFile, {
+        contentType: signJson.content_type,
+      });
+    if (uploadError) throw new Error("ファイルのアップロードに失敗しました");
 
     location.href = `index.html?work=${signJson.work_id}`;
   } catch (e) {

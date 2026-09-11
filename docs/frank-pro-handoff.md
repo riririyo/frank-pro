@@ -102,13 +102,14 @@ C = サイト全体の平均点（実測をそのまま使う）
 
 | 役割 | 使うもの | 理由 |
 |---|---|---|
-| HTMLの置き場・配信 | Cloudflare R2 | 転送量課金がゼロ。バズっても帯域で刺されない |
-| 配信ヘッダの強制 | Cloudflare Workers | R2の前に1枚挟む。ヘッダ付け忘れが致命傷になるため |
+| HTMLの置き場・配信 | Supabase Storage | 無料枠にカード登録不要・超過時も自動課金されない（当初R2予定だったが変更。security-design.md 1-1-補） |
+| 配信ヘッダの強制 | Cloudflare Workers | ストレージの前に1枚挟む。ヘッダ付け忘れが致命傷になるため。エッジキャッシュで帯域も節約 |
 | DB・認証・一覧データ | Supabase 無料枠 | Postgres＋Authが揃う |
 | サイト本体 | Cloudflare Pages | 静的配信で実質無料 |
 | サムネ生成・日次バッチ | GitHub Actions ＋ Playwright | 常時ヘッドレスを動かすと無料枠を超える。1日1回まとめて未処理分だけ撮る |
 
-容量は問題にならない（HTML1本は数十〜数百KB、1000本で100MB程度）。怖いのは転送量で、そこをR2で潰している。
+容量は問題にならない（HTML1本は数十〜数百KB、1000本で100MB程度）。転送量はCloudflare Workerの
+エッジキャッシュ（1時間TTL）で大部分を吸収し、Supabase Storage側の無料枠（月間帯域5GB）を節約する。
 
 **各社の無料枠の数字は変わるので、着手前に現在のページで確認する。**
 
@@ -140,7 +141,7 @@ C = サイト全体の平均点（実測をそのまま使う）
 ### 最重要の2点
 
 1. **`Content-Security-Policy: sandbox allow-scripts` をレスポンスヘッダで付ける。**
-   iframeの `sandbox` 属性だけでは、R2の公開URLを直接開かれたときに効かない。
+   iframeの `sandbox` 属性だけでは、Supabase Storageの公開URLを直接開かれたときに効かない。
    そのとき作品は配信ドメインの正規オリジンとして動き、他作品のストレージが読め、
    そのドメイン上でフィッシングページとして成立してしまう。
    （Google「Securely hosting user data in modern web applications」の推奨）
@@ -197,7 +198,7 @@ APIキーやトークンはコードに書かず、**GitHub Secrets と Cloudfla
 
 ```
 □ GitHub アカウント → リポジトリ frank-pro を public で作成
-□ Cloudflare アカウント（R2 は無料枠でもカード登録を求められる場合がある）
+□ Cloudflare アカウント（Workers / Pages は無料枠にカード登録不要）
 □ Supabase アカウント → プロジェクト作成、リージョンは Tokyo
 □ ドメイン取得（frank.pro が取れるか確認する。.pro は実在のTLD）
 □ PC上に作業フォルダを作り、git clone する
@@ -212,7 +213,7 @@ APIキーやトークンはコードに書かず、**GitHub Secrets と Cloudfla
 ```
 frank-pro/
 ├─ web/              … Cloudflare Pages にデプロイする静的サイト
-├─ worker/           … R2 の前に置く Cloudflare Worker（配信ヘッダの強制）
+├─ worker/           … Supabase Storage の前に置く Cloudflare Worker（配信ヘッダの強制）
 ├─ supabase/
 │   ├─ migrations/   … テーブル定義と RLS
 │   └─ functions/    … Edge Function（署名URL発行、評価・コメントの受け口）
@@ -225,7 +226,7 @@ frank-pro/
 
 1. リポジトリ作成、Cloudflare Pages と接続（空のページが公開されるところまで）
 2. Supabase のテーブルと RLS
-3. Worker ＋ R2 の配信経路。**先に security-design.md のヘッダを通して、
+3. Worker ＋ Supabase Storage の配信経路。**先に security-design.md のヘッダを通して、
    手で置いたテストHTMLが opaque origin になることを確認する**
 4. 投稿フロー（Edge Function 経由の署名URL、縦長プレビュー、サムネ任意アップロード）
 5. 一覧（4種の並べ替え）と作品ページ

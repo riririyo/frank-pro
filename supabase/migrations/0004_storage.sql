@@ -1,6 +1,7 @@
 -- frank pro — サムネイル用ストレージバケット
--- 投稿HTML本体はR2（別ドメイン・CSP隔離が必須）に置くが、
--- サムネイル画像は無害な静的画像なのでSupabase Storageで十分（docs/frank-pro-handoff.md 8章）。
+-- 投稿HTML本体は別バケット（works。0005_works_bucket.sql）に置き、配信は
+-- 別ドメインのCloudflare Worker経由でCSP隔離する。
+-- サムネイル画像は無害な静的画像なので、このバケットは公開直配信で十分（docs/frank-pro-handoff.md 8章）。
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('thumbnails', 'thumbnails', true, 2097152, array['image/png', 'image/jpeg', 'image/webp'])

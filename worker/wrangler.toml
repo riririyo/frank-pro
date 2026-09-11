@@ -8,9 +8,8 @@ compatibility_date = "2026-01-01"
 #   { pattern = "works.frank.pro/*", zone_name = "frank.pro" }
 # ]
 
-[[r2_buckets]]
-binding = "WORKS_BUCKET"
-bucket_name = "frank-pro-works"
-
 [vars]
 FRAME_ANCESTOR = "https://frank.pro"
+# Supabase Storageの公開バケットURL。<project-ref>を実際の値に差し替える
+# 例: https://xxxxxxxx.supabase.co/storage/v1/object/public/works
+SUPABASE_STORAGE_BASE_URL = "https://YOUR-PROJECT-REF.supabase.co/storage/v1/object/public/works"

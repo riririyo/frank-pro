@@ -26,7 +26,7 @@ create table if not exists public.works (
   author_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   description text not null default '',
-  -- R2上のパス。配信は worker/ 経由でのみ行う
+  -- Supabase Storage（worksバケット）上のパス。配信は worker/ 経由でのみ行う
   file_path text not null,
   file_size_bytes integer not null,
   thumbnail_path text, -- 未設定ならプレースホルダをフロントで生成

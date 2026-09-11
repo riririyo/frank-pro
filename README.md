@@ -14,7 +14,7 @@ HTMLで作ったゲーム・プロダクトを、投稿はログイン必須・�
 ```
 frank-pro/
 ├─ web/              Cloudflare Pages にデプロイする静的サイト（ビルド不要・素のHTML/JS）
-├─ worker/           R2の前に置くCloudflare Worker（配信ヘッダの強制。ここがセキュリティの要）
+├─ worker/           Supabase Storageの前に置くCloudflare Worker（配信ヘッダの強制。ここがセキュリティの要）
 ├─ supabase/
 │   ├─ migrations/   テーブル定義・RLS・RPC関数
 │   └─ functions/    Edge Function（署名URL発行、コメント投稿）
@@ -30,7 +30,7 @@ frank-pro/
 ### 1. アカウント準備
 
 - [ ] GitHub アカウント（このリポジトリを push する）
-- [ ] Cloudflare アカウント（R2 / Pages / Workers。無料枠でもカード登録を求められる場合あり）
+- [ ] Cloudflare アカウント（Pages / Workers。無料枠にカード登録不要）
 - [ ] Supabase アカウント（プロジェクトを作成。リージョンは Tokyo を選ぶ）
 - [ ] ドメイン（例: `frank.pro`）— サイト本体用と作品配信用で**サブドメインを分ける**
       （例: `frank.pro` と `works.frank.pro`。docs/security-design.md 1-1節）
@@ -48,36 +48,26 @@ supabase functions deploy sign-upload
 supabase functions deploy submit-comment
 ```
 
-Edge Function の環境変数（Supabase ダッシュボード > Project Settings > Edge Functions）に設定:
-
-```
-R2_ACCOUNT_ID
-R2_ACCESS_KEY_ID
-R2_SECRET_ACCESS_KEY
-R2_BUCKET_NAME=frank-pro-works
-```
-
-`SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が自動で渡すので設定不要。
+`sign-upload` はSupabase Storageの署名付きアップロードURLを発行するだけなので、
+追加の環境変数は不要。`SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が
+自動で渡す。
 
 Auth の設定（Supabase ダッシュボード > Authentication）:
 - Email OTP（マジックリンク）を有効化
 - Redirect URLs に本番サイトの `submit.html` を追加
 
-### 3. Cloudflare R2 + Worker
+### 3. Cloudflare Worker（配信）
 
 ```bash
-# R2バケット作成（ダッシュボードから、またはwrangler経由で）
 cd worker
 npm install
-npx wrangler r2 bucket create frank-pro-works
 npx wrangler deploy
 ```
 
-`wrangler.toml` の `routes` を実際のドメインに合わせて有効化し、
-`works.frank.pro` のようなサブドメインをこのWorkerにルーティングする。
-
-R2の「S3互換API」用のアクセスキーを発行し（Cloudflareダッシュボード > R2 > Manage R2 API Tokens）、
-それを Supabase の `sign-upload` 関数の環境変数に設定する（上記）。
+`wrangler.toml` の `[vars]` にある `SUPABASE_STORAGE_BASE_URL` を、実際のSupabaseプロジェクトの
+Storage公開URL（例: `https://xxxxxxxx.supabase.co/storage/v1/object/public/works`）に書き換える。
+`routes` も実際のドメインに合わせて有効化し、`works.frank.pro` のようなサブドメインを
+このWorkerにルーティングする。
 
 **デプロイしたら必ず確認すること**（docs/security-design.md 1章）:
 テスト用のHTMLを1本置いて、ブラウザの開発者ツールで
@@ -100,10 +90,6 @@ R2の「S3互換API」用のアクセスキーを発行し（Cloudflareダッシ
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
 WORKS_BASE_URL
-R2_ACCOUNT_ID
-R2_ACCESS_KEY_ID
-R2_SECRET_ACCESS_KEY
-R2_BUCKET_NAME
 ```
 
 `.github/workflows/daily.yml` が毎日自動実行する。手動実行は Actions タブから
@@ -127,7 +113,7 @@ python3 -m http.server 8788
 ## 実装の状態（このリポジトリで作られているもの）
 
 - [x] Supabase スキーマ・RLS・RPC関数（works, ratings, comments, featured, site_stats）
-- [x] Cloudflare Worker（R2配信時のセキュリティヘッダ強制）
+- [x] Cloudflare Worker（Supabase Storage配信時のセキュリティヘッダ強制）
 - [x] 投稿用 Edge Function（署名URL発行、サイズ検証）
 - [x] コメント投稿 Edge Function（IP/UAをサーバー側で記録）
 - [x] 一覧ページ（4種の並べ替え、無限スクロール）

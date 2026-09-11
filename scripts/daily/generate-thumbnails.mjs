@@ -13,10 +13,6 @@ import { chromium } from "playwright";
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const WORKS_BASE_URL = process.env.WORKS_BASE_URL; // 例: https://works.frank.pro
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
-const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME ?? "frank-pro-works";
 const THUMBNAILS_BUCKET = "thumbnails"; // Supabase Storage
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
