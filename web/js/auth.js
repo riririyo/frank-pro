@@ -1,4 +1,4 @@
-// frank pro — ログイン（投稿にのみ必要。閲覧・評価・コメントはログイン不要）
+// frank pro — ログイン（投稿には必要。閲覧・評価・コメントはログイン不要）
 // マジックリンク方式（パスワード不要）。ソーシャルログインを足す場合はここに追加する。
 
 import { supabase } from "./supabaseClient.js";
@@ -21,6 +21,11 @@ async function refreshAuthUI(slot) {
     submitLink.href = "submit.html";
     submitLink.textContent = "投稿する";
 
+    const myPageLink = document.createElement("a");
+    myPageLink.className = "btn";
+    myPageLink.href = "mypage.html";
+    myPageLink.textContent = "マイページ";
+
     const signOutBtn = document.createElement("button");
     signOutBtn.className = "btn";
     signOutBtn.textContent = "ログアウト";
@@ -29,6 +34,7 @@ async function refreshAuthUI(slot) {
     });
 
     slot.appendChild(submitLink);
+    slot.appendChild(myPageLink);
     slot.appendChild(signOutBtn);
   } else {
     const loginBtn = document.createElement("button");
