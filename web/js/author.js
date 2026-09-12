@@ -4,6 +4,8 @@
 import { supabase } from "./supabaseClient.js";
 import { openPlayer } from "./player.js";
 
+const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
+
 export async function initAuthorPage() {
   const params = new URLSearchParams(location.search);
   const authorId = params.get("id");
@@ -16,7 +18,7 @@ export async function initAuthorPage() {
     supabase.from("profiles").select("display_name, bio, sns_links").eq("id", authorId).maybeSingle(),
     supabase
       .from("works")
-      .select("id, title, thumbnail_path, access_count, rating_count, rating_avg")
+      .select("id, title, thumbnail_path, category, access_count, rating_count, rating_avg")
       .eq("author_id", authorId)
       .eq("status", "published")
       .order("created_at", { ascending: false }),
@@ -58,8 +60,12 @@ export async function initAuthorPage() {
       const card = document.createElement("div");
       card.className = "work-card";
       card.addEventListener("click", () => openPlayer(w.id));
+      const genreLabel = GENRE_LABELS[w.category];
       card.innerHTML = `
-        <div class="work-thumb-wrap"><div class="work-thumb"></div></div>
+        <div class="work-thumb-wrap">
+          <div class="work-thumb"></div>
+          ${genreLabel ? `<div class="genre-badge">${genreLabel}</div>` : ""}
+        </div>
         <div class="work-meta">
           <div class="work-title">${escapeHtml(w.title)}</div>
           <div class="work-stats">${w.rating_count > 0 ? `★ ${w.rating_avg.toFixed(1)}` : "評価なし"} · ${w.access_count}回</div>
