@@ -9,6 +9,8 @@ import { getPlayedIds } from "./visitor.js";
 
 const PAGE_SIZE = 24;
 
+const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
+
 const SORT_OPTIONS = [
   { key: "new", label: "新規", column: "created_at", ascending: false },
   { key: "access", label: "アクセス数", column: "access_count", ascending: false },
@@ -82,7 +84,7 @@ async function fetchPage() {
   loading = true;
   const { data, error } = await supabase
     .from("works")
-    .select("id, title, thumbnail_path, access_count, rating_count, rating_avg, rating_bayes, created_at")
+    .select("id, title, thumbnail_path, category, access_count, rating_count, rating_avg, rating_bayes, created_at")
     .eq("status", "published")
     .order(currentSort.column, { ascending: currentSort.ascending })
     .range(currentOffset, currentOffset + PAGE_SIZE - 1);
@@ -119,6 +121,13 @@ function buildCard(work) {
     thumb.textContent = "";
   }
   thumbWrap.appendChild(thumb);
+
+  if (GENRE_LABELS[work.category]) {
+    const genreBadge = document.createElement("div");
+    genreBadge.className = "genre-badge";
+    genreBadge.textContent = GENRE_LABELS[work.category];
+    thumbWrap.appendChild(genreBadge);
+  }
 
   if (played.has(work.id)) {
     const badge = document.createElement("div");
