@@ -26,5 +26,8 @@ additional_redirect_urls = []
 [functions.sign-upload]
 verify_jwt = true
 
+[functions.trigger-thumbnail]
+verify_jwt = true
+
 [functions.submit-comment]
 verify_jwt = false
