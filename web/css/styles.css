@@ -443,6 +443,7 @@ img { max-width: 100%; display: block; }
   color: var(--text-secondary);
 }
 .form-field input[type="text"],
+.form-field input[type="url"],
 .form-field textarea {
   width: 100%;
   font: inherit;
@@ -537,6 +538,28 @@ footer.site-footer a { margin: 0 8px; }
   color: var(--danger);
   border-color: var(--danger);
 }
+
+.mypage-section-heading {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 32px 0 12px;
+}
+
+.profile-edit .form-field { margin-bottom: 16px; }
+
+.sns-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sns-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.sns-link-row .sns-platform-input { flex: 0 0 30%; min-width: 0; }
+.sns-link-row .sns-url-input { flex: 1; min-width: 0; }
 
 .mypage-list {
   display: flex;
