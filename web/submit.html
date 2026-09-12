@@ -40,6 +40,15 @@
       </div>
 
       <div class="form-field">
+        <label for="thumbnail-input">サムネイル画像（任意・2MB以下 / PNG・JPEG・WebP）</label>
+        <input id="thumbnail-input" type="file" accept="image/png,image/jpeg,image/webp" />
+        <div id="thumbnail-preview"></div>
+        <p id="thumbnail-hint" class="form-hint">
+          設定しない場合は、投稿から最大24時間ほどで自動生成されたサムネイルが使われます。
+        </p>
+      </div>
+
+      <div class="form-field">
         <label>縦持ちプレビュー（スマホと同じ条件で確認してください）</label>
         <div class="mobile-preview">
           <iframe id="mobile-preview-frame" sandbox="allow-scripts allow-pointer-lock"></iframe>
