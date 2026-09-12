@@ -26,17 +26,29 @@
       <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
     </div>
     <div class="player-frame-wrap" id="player-frame-wrap"></div>
-    <div class="player-sheet">
-      <div id="player-rating"></div>
-      <div id="player-comments"></div>
+  </div>
+
+  <!-- 評価・コメントモーダル（一覧ページと共通の構造） -->
+  <div class="rate-modal-overlay" id="rate-modal-overlay" hidden>
+    <div class="rate-modal">
+      <div class="rate-modal-header">
+        <span class="rate-modal-title" id="rate-modal-title"></span>
+        <button id="rate-modal-close" class="btn btn-icon" aria-label="閉じる">✕</button>
+      </div>
+      <div class="rate-modal-body">
+        <div id="rate-modal-rating"></div>
+        <div id="rate-modal-comments"></div>
+      </div>
     </div>
   </div>
 
   <script type="module">
     import { initAuthorPage } from "./js/author.js";
     import { initPlayer } from "./js/player.js";
+    import { initRateModal } from "./js/rate-modal.js";
     initAuthorPage();
     initPlayer();
+    initRateModal();
   </script>
 </body>
 </html>
