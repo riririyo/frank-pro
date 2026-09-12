@@ -21,6 +21,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const WORKS_BUCKET = "works";
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB（docs/security-design.md, posting-guideline-draft.md）
+const VALID_CATEGORIES = ["game", "product"];
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*", // 本番では frank pro の実ドメインに絞る
@@ -52,7 +53,7 @@ Deno.serve(async (req) => {
   }
   const userId = userData.user.id;
 
-  let body: { title?: string; description?: string; file_size_bytes?: number };
+  let body: { title?: string; description?: string; category?: string; file_size_bytes?: number };
   try {
     body = await req.json();
   } catch {
@@ -61,6 +62,7 @@ Deno.serve(async (req) => {
 
   const title = (body.title ?? "").trim().slice(0, 100);
   const description = (body.description ?? "").trim().slice(0, 2000);
+  const category = VALID_CATEGORIES.includes(body.category ?? "") ? body.category! : "game";
   const fileSize = Number(body.file_size_bytes ?? 0);
 
   if (!title) {
@@ -82,6 +84,7 @@ Deno.serve(async (req) => {
     author_id: userId,
     title,
     description,
+    category,
     file_path: objectPath,
     file_size_bytes: fileSize,
     status: "published",
