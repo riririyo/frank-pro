@@ -10,7 +10,13 @@ name: daily-batch
 on:
   schedule:
     - cron: "0 18 * * *" # 毎日 03:00 JST
-  workflow_dispatch: {} # 手動実行も可能にしておく
+  workflow_dispatch: # 手動実行、および投稿直後のsign-upload Edge Functionからの即時起動用
+    inputs:
+      thumbnails_only:
+        description: "true にするとサムネ生成だけ実行し、ベイズ再計算・ログ削除はスキップする（投稿直後の即時実行用）"
+        required: false
+        default: "false"
+        type: boolean
 
 jobs:
   run:
@@ -39,12 +45,14 @@ jobs:
           WORKS_BASE_URL: ${{ secrets.WORKS_BASE_URL }}
 
       - name: Recompute bayesian ranking
+        if: github.event.inputs.thumbnails_only != 'true'
         run: npm run recompute
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Purge old comment sender logs
+        if: github.event.inputs.thumbnails_only != 'true'
         run: npm run purge
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
