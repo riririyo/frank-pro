@@ -9,8 +9,6 @@
 import { CONFIG } from "./config.js";
 import { getVisitorId, markPlayed } from "./visitor.js";
 import { supabase } from "./supabaseClient.js";
-import { renderRatingWidget } from "./rating.js";
-import { renderComments } from "./comments.js";
 
 let currentWork = null;
 
@@ -78,9 +76,6 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
 
   markPlayed(work.id);
   recordView(work.id);
-
-  renderRatingWidget(document.getElementById("player-rating"), work.id);
-  renderComments(document.getElementById("player-comments"), work.id);
 }
 
 export function closePlayer({ skipHistory = false } = {}) {
