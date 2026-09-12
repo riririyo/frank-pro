@@ -217,6 +217,8 @@ function renderStaticWarnings(sourceText, warningsEl) {
 async function handleSubmit({ submitBtn }) {
   const title = document.getElementById("title-input").value.trim();
   const description = document.getElementById("description-input").value.trim();
+  const genreInput = document.querySelector('input[name="genre"]:checked');
+  const category = genreInput ? genreInput.value : "game";
   const checklistBoxes = [...document.querySelectorAll(".checklist input[type=checkbox]")];
 
   if (!selectedFile) {
@@ -255,6 +257,7 @@ async function handleSubmit({ submitBtn }) {
       body: JSON.stringify({
         title,
         description,
+        category,
         file_size_bytes: selectedFile.size,
       }),
     });
