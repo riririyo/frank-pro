@@ -9,10 +9,18 @@ import { supabase } from "./supabaseClient.js";
 import { requireAuth } from "./auth.js";
 
 const MAX_SIZE = CONFIG.MAX_FILE_SIZE_BYTES;
+const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB（0004_storage.sqlのthumbnailsバケット上限と一致させる）
+const THUMBNAIL_MIME_TO_EXT = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
 
 let selectedFile = null;
+let selectedThumbnailFile = null;
 let hasPreviewedOnce = false;
 let previewUrl = null;
+let thumbnailPreviewUrl = null;
 
 export async function initSubmitPage() {
   const user = await requireAuth();
@@ -23,11 +31,18 @@ export async function initSubmitPage() {
   const warningsEl = document.getElementById("upload-warnings");
   const submitBtn = document.getElementById("submit-btn");
   const previewHint = document.getElementById("preview-hint");
+  const thumbnailInput = document.getElementById("thumbnail-input");
+  const thumbnailPreviewEl = document.getElementById("thumbnail-preview");
+  const thumbnailHint = document.getElementById("thumbnail-hint");
 
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files[0];
     if (!file) return;
     await handleFileSelected(file, { previewFrame, warningsEl, previewHint });
+  });
+
+  thumbnailInput.addEventListener("change", () => {
+    handleThumbnailSelected(thumbnailInput.files[0], { thumbnailPreviewEl, thumbnailHint });
   });
 
   previewFrame.addEventListener("load", () => {
@@ -71,6 +86,39 @@ async function handleFileSelected(file, { previewFrame, warningsEl, previewHint 
 
   previewHint.textContent = "プレビューを確認してから投稿してください（未確認だと投稿できません）。";
   previewHint.classList.add("warn");
+}
+
+function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint }) {
+  thumbnailPreviewEl.innerHTML = "";
+  selectedThumbnailFile = null;
+
+  if (!file) return;
+
+  if (!THUMBNAIL_MIME_TO_EXT[file.type]) {
+    thumbnailHint.textContent = "PNG・JPEG・WebPのいずれかを選んでください。";
+    thumbnailHint.className = "form-hint error";
+    return;
+  }
+  if (file.size > MAX_THUMBNAIL_SIZE) {
+    thumbnailHint.textContent = `ファイルサイズが上限（2MB）を超えています（${(file.size / 1024 / 1024).toFixed(2)}MB）。`;
+    thumbnailHint.className = "form-hint error";
+    return;
+  }
+
+  selectedThumbnailFile = file;
+  thumbnailHint.textContent = "この画像がサムネイルとして使われます。";
+  thumbnailHint.className = "form-hint";
+
+  if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl);
+  thumbnailPreviewUrl = URL.createObjectURL(file);
+  const img = document.createElement("img");
+  img.src = thumbnailPreviewUrl;
+  img.style.width = "96px";
+  img.style.height = "128px";
+  img.style.objectFit = "cover";
+  img.style.borderRadius = "10px";
+  img.style.marginTop = "8px";
+  thumbnailPreviewEl.appendChild(img);
 }
 
 function renderStaticWarnings(sourceText, warningsEl) {
@@ -156,11 +204,43 @@ async function handleSubmit({ submitBtn }) {
       });
     if (uploadError) throw new Error("ファイルのアップロードに失敗しました");
 
+    // サムネイルは任意項目なので、失敗しても投稿自体は成功扱いにする
+    // （未設定のままなら日次バッチが後で自動生成する。0004_storage.sql / 0001_init.sqlのthumbnail_source参照）
+    if (selectedThumbnailFile) {
+      await uploadThumbnail(signJson.work_id, session.user.id, selectedThumbnailFile);
+    }
+
     location.href = `index.html?work=${signJson.work_id}`;
   } catch (e) {
     alert(e.message || "投稿に失敗しました");
     submitBtn.disabled = false;
     submitBtn.textContent = "投稿する";
+  }
+}
+
+async function uploadThumbnail(workId, userId, file) {
+  try {
+    const ext = THUMBNAIL_MIME_TO_EXT[file.type];
+    // thumbnails_insert_own_path ポリシー（0004_storage.sql）が
+    // 先頭セグメント=自分のuidのパスにしかアップロードを許可しないため、この形にする
+    const path = `${userId}/${workId}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("thumbnails")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data: publicUrlData } = supabase.storage.from("thumbnails").getPublicUrl(path);
+
+    const { error: updateError } = await supabase
+      .from("works")
+      .update({ thumbnail_path: publicUrlData.publicUrl, thumbnail_source: "author" })
+      .eq("id", workId);
+    if (updateError) throw updateError;
+  } catch (e) {
+    // 投稿自体は成功しているので、ここで失敗してもブロックしない。
+    // thumbnail_sourceは'pending'のままなので、日次バッチが後で自動生成してくれる。
+    console.error("thumbnail upload failed", e);
   }
 }
 
