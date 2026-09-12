@@ -10,6 +10,9 @@ import { requireAuth } from "./auth.js";
 
 const MAX_SIZE = CONFIG.MAX_FILE_SIZE_BYTES;
 const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB（0004_storage.sqlのthumbnailsバケット上限と一致させる）
+const MAX_THUMBNAIL_RAW_SIZE = 20 * 1024 * 1024; // 圧縮前の元画像に対する上限（スマホの高解像度写真でも通るように余裕を持たせる）
+const THUMBNAIL_MAX_DIMENSION = 1600; // 圧縮後の最大辺（一覧のカードは小さいので十分な解像度）
+const THUMBNAIL_JPEG_QUALITY = 0.82;
 const THUMBNAIL_MIME_TO_EXT = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -41,8 +44,8 @@ export async function initSubmitPage() {
     await handleFileSelected(file, { previewFrame, warningsEl, previewHint });
   });
 
-  thumbnailInput.addEventListener("change", () => {
-    handleThumbnailSelected(thumbnailInput.files[0], { thumbnailPreviewEl, thumbnailHint });
+  thumbnailInput.addEventListener("change", async () => {
+    await handleThumbnailSelected(thumbnailInput.files[0], { thumbnailPreviewEl, thumbnailHint });
   });
 
   previewFrame.addEventListener("load", () => {
@@ -88,7 +91,7 @@ async function handleFileSelected(file, { previewFrame, warningsEl, previewHint 
   previewHint.classList.add("warn");
 }
 
-function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint }) {
+async function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint }) {
   thumbnailPreviewEl.innerHTML = "";
   selectedThumbnailFile = null;
 
@@ -99,18 +102,36 @@ function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint }) {
     thumbnailHint.className = "form-hint error";
     return;
   }
-  if (file.size > MAX_THUMBNAIL_SIZE) {
-    thumbnailHint.textContent = `ファイルサイズが上限（2MB）を超えています（${(file.size / 1024 / 1024).toFixed(2)}MB）。`;
+  if (file.size > MAX_THUMBNAIL_RAW_SIZE) {
+    thumbnailHint.textContent = `ファイルサイズが大きすぎます（${(file.size / 1024 / 1024).toFixed(2)}MB）。別の画像を選んでください。`;
     thumbnailHint.className = "form-hint error";
     return;
   }
 
-  selectedThumbnailFile = file;
-  thumbnailHint.textContent = "この画像がサムネイルとして使われます。";
+  const originalSize = file.size;
+  thumbnailHint.textContent = "画像を圧縮しています…";
+  thumbnailHint.className = "form-hint";
+
+  const compressed = await compressThumbnailImage(file);
+
+  if (compressed.size > MAX_THUMBNAIL_SIZE) {
+    thumbnailHint.textContent = `圧縮しても上限（2MB）を超えています（${(compressed.size / 1024 / 1024).toFixed(2)}MB）。別の画像を選んでください。`;
+    thumbnailHint.className = "form-hint error";
+    return;
+  }
+
+  selectedThumbnailFile = compressed;
+
+  const savedPercent =
+    originalSize > 0 ? Math.round((1 - compressed.size / originalSize) * 100) : 0;
+  thumbnailHint.textContent =
+    savedPercent > 0
+      ? `この画像がサムネイルとして使われます（${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(compressed.size / 1024 / 1024).toFixed(2)}MBに自動圧縮）`
+      : "この画像がサムネイルとして使われます。";
   thumbnailHint.className = "form-hint";
 
   if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl);
-  thumbnailPreviewUrl = URL.createObjectURL(file);
+  thumbnailPreviewUrl = URL.createObjectURL(compressed);
   const img = document.createElement("img");
   img.src = thumbnailPreviewUrl;
   img.style.width = "96px";
@@ -119,6 +140,49 @@ function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint }) {
   img.style.borderRadius = "10px";
   img.style.marginTop = "8px";
   thumbnailPreviewEl.appendChild(img);
+}
+
+// サムネイル画像をcanvasで縮小・再エンコードして、アップロード容量を抑える。
+// 元画像がすでに小さい場合や、何らかの理由で圧縮に失敗した場合は元のファイルをそのまま返す。
+async function compressThumbnailImage(
+  file,
+  { maxDimension = THUMBNAIL_MAX_DIMENSION, quality = THUMBNAIL_JPEG_QUALITY } = {}
+) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
+      img.src = objectUrl;
+    });
+
+    let { naturalWidth: width, naturalHeight: height } = image;
+    if (!width || !height) return file;
+
+    if (width > maxDimension || height > maxDimension) {
+      const scale = maxDimension / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (!blob || blob.size >= file.size) return file;
+
+    const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], newName, { type: "image/jpeg" });
+  } catch (e) {
+    console.error("thumbnail compress failed", e);
+    return file;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function renderStaticWarnings(sourceText, warningsEl) {
