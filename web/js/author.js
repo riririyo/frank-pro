@@ -3,6 +3,7 @@
 
 import { supabase } from "./supabaseClient.js";
 import { openPlayer } from "./player.js";
+import { buildCardMenuButton } from "./card-menu.js";
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
 
@@ -68,9 +69,12 @@ export async function initAuthorPage() {
         </div>
         <div class="work-meta">
           <div class="work-title">${escapeHtml(w.title)}</div>
-          <div class="work-stats">${w.rating_count > 0 ? `★ ${w.rating_avg.toFixed(1)}` : "評価なし"} · ${w.access_count}回</div>
+          <div class="work-meta-row">
+            <div class="work-stats">${w.rating_count > 0 ? `★ ${w.rating_avg.toFixed(1)}` : "評価なし"} · ${w.access_count}回</div>
+          </div>
         </div>
       `;
+      card.querySelector(".work-meta-row").appendChild(buildCardMenuButton(card, w));
       grid.appendChild(card);
     }
   }
