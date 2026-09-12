@@ -50,17 +50,17 @@ export async function handleOgp(context) {
     const work = Array.isArray(rows) ? rows[0] : null;
     if (!work) return assetResponse;
 
-    const title = `${work.title} — frank pro`;
+    const title = `${work.title} — frank html`;
     const rawDescription = (work.description || "").trim();
     const description = rawDescription
       ? rawDescription.slice(0, 140)
-      : "frank proで今すぐ遊べる投稿ゲーム・プロダクト";
+      : "frank htmlで今すぐ遊べる投稿ゲーム・プロダクト";
     const pageUrl = `${url.origin}/?work=${encodeURIComponent(work.id)}`;
     const image = work.thumbnail_path || null;
 
     let headTags = `
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="frank pro">
+<meta property="og:site_name" content="frank html">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(pageUrl)}">
