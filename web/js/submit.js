@@ -272,9 +272,13 @@ async function handleSubmit({ submitBtn }) {
     if (uploadError) throw new Error("ファイルのアップロードに失敗しました");
 
     // サムネイルは任意項目なので、失敗しても投稿自体は成功扱いにする
-    // （未設定のままなら日次バッチが後で自動生成する。0004_storage.sql / 0001_init.sqlのthumbnail_source参照）
+    // （未設定のままなら自動生成される。0004_storage.sql / 0001_init.sqlのthumbnail_source参照）
     if (selectedThumbnailFile) {
       await uploadThumbnail(signJson.work_id, session.user.id, selectedThumbnailFile);
+    } else {
+      // 自分でサムネイルを設定しなかった場合、自動生成バッチをその場で起動する
+      // （設定しない限り最大24時間待つ、ではなく数分以内に反映されるようにする）
+      await triggerThumbnailBatch(signJson.work_id, session.access_token);
     }
 
     location.href = `index.html?work=${signJson.work_id}`;
@@ -306,8 +310,26 @@ async function uploadThumbnail(workId, userId, file) {
     if (updateError) throw updateError;
   } catch (e) {
     // 投稿自体は成功しているので、ここで失敗してもブロックしない。
-    // thumbnail_sourceは'pending'のままなので、日次バッチが後で自動生成してくれる。
+    // thumbnail_sourceは'pending'のままなので、自動生成バッチが後で拾ってくれる。
     console.error("thumbnail upload failed", e);
+  }
+}
+
+// サムネイル自動生成バッチ（GitHub Actions）をその場で起動する。
+// 失敗しても投稿自体はすでに成功しているので何もしない（最悪、次の定期実行で拾われる）。
+async function triggerThumbnailBatch(workId, accessToken) {
+  try {
+    await fetch(CONFIG.TRIGGER_THUMBNAIL_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: CONFIG.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ work_id: workId }),
+    });
+  } catch (e) {
+    console.error("thumbnail batch trigger failed", e);
   }
 }
 
