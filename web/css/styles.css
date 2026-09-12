@@ -296,6 +296,52 @@ img { max-width: 100%; display: block; }
 }
 .work-stats .stars { color: var(--star-filled); }
 
+.work-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.card-menu-btn {
+  background: none;
+  border: none;
+  padding: 2px 8px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.card-menu-btn:hover { background: var(--surface-elevated); }
+
+.card-menu {
+  position: absolute;
+  right: 10px;
+  bottom: 44px;
+  z-index: 10;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+}
+.card-menu button {
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text);
+  white-space: nowrap;
+}
+.card-menu button:hover { background: var(--surface-elevated); }
+
 .empty-state, .loading-state {
   grid-column: 1 / -1;
   text-align: center;
@@ -344,11 +390,54 @@ img { max-width: 100%; display: block; }
   border: none;
 }
 
-.player-sheet {
+/* ============ 評価・コメントモーダル ============ */
+/* プレイ画面とは独立。一覧・作者ページのカードの「⋮」→「評価する」から開く（rate-modal.js） */
+
+.rate-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 110;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.rate-modal-overlay[hidden] { display: none; }
+
+.rate-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
   background: var(--surface);
-  border-top: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (min-width: 560px) {
+  .rate-modal {
+    margin-bottom: 5vh;
+    border-radius: var(--radius-lg);
+    max-height: 70vh;
+  }
+}
+
+.rate-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px max(16px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--border);
+}
+.rate-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rate-modal-body {
   padding: 16px max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-bottom));
-  max-height: 40vh;
   overflow-y: auto;
 }
 
