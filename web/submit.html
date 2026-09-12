@@ -34,6 +34,14 @@
       </div>
 
       <div class="form-field">
+        <label>ジャンル</label>
+        <div class="genre-select">
+          <label class="genre-option"><input type="radio" name="genre" value="game" checked /> ゲーム</label>
+          <label class="genre-option"><input type="radio" name="genre" value="product" /> プロダクト</label>
+        </div>
+      </div>
+
+      <div class="form-field">
         <label for="file-input">作品ファイル（HTML 1ファイル・5MB以下）</label>
         <input id="file-input" type="file" accept=".html,text/html" required />
         <div id="upload-warnings"></div>
