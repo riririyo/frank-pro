@@ -40,9 +40,19 @@
     <div class="player-frame-wrap" id="player-frame-wrap">
       <!-- iframeはJSで動的に生成・破棄する（player.js） -->
     </div>
-    <div class="player-sheet">
-      <div id="player-rating"></div>
-      <div id="player-comments"></div>
+  </div>
+
+  <!-- 評価・コメントモーダル（一覧カードの「⋮」から開く。プレイ画面とは独立） -->
+  <div class="rate-modal-overlay" id="rate-modal-overlay" hidden>
+    <div class="rate-modal">
+      <div class="rate-modal-header">
+        <span class="rate-modal-title" id="rate-modal-title"></span>
+        <button id="rate-modal-close" class="btn btn-icon" aria-label="閉じる">✕</button>
+      </div>
+      <div class="rate-modal-body">
+        <div id="rate-modal-rating"></div>
+        <div id="rate-modal-comments"></div>
+      </div>
     </div>
   </div>
 
@@ -51,11 +61,13 @@
     import { initListing } from "./js/listing.js";
     import { initPlayer } from "./js/player.js";
     import { initRandomButton } from "./js/random.js";
+    import { initRateModal } from "./js/rate-modal.js";
 
     initAuthHeader();
     initListing();
     initPlayer();
     initRandomButton();
+    initRateModal();
   </script>
 </body>
 </html>
