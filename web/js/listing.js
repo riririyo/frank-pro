@@ -6,6 +6,7 @@
 import { supabase } from "./supabaseClient.js";
 import { openPlayer } from "./player.js";
 import { getPlayedIds } from "./visitor.js";
+import { buildCardMenuButton } from "./card-menu.js";
 
 const PAGE_SIZE = 24;
 
@@ -149,8 +150,13 @@ function buildCard(work) {
     work.rating_count > 0 ? `<span class="stars">★</span> ${work.rating_avg.toFixed(1)}` : "評価なし";
   stats.innerHTML = `${ratingText} · ${work.access_count}回`;
 
+  const metaRow = document.createElement("div");
+  metaRow.className = "work-meta-row";
+  metaRow.appendChild(stats);
+  metaRow.appendChild(buildCardMenuButton(card, work));
+
   meta.appendChild(title);
-  meta.appendChild(stats);
+  meta.appendChild(metaRow);
 
   card.appendChild(thumbWrap);
   card.appendChild(meta);
