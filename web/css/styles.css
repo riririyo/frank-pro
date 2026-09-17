@@ -41,7 +41,6 @@
 }
 
 * { box-sizing: border-box; }
-
 html, body {
   margin: 0;
   padding: 0;
@@ -177,6 +176,33 @@ img { max-width: 100%; display: block; }
   padding: 8px;
   border-radius: 999px;
   aspect-ratio: 1;
+}
+
+/* ============ frank htmlとは（トップページの説明） ============ */
+
+.about-blurb {
+  margin: 0 max(16px, env(safe-area-inset-left));
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.about-blurb summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  list-style: none;
+}
+.about-blurb summary::-webkit-details-marker { display: none; }
+.about-blurb summary::before {
+  content: "▸ ";
+}
+.about-blurb[open] summary::before {
+  content: "▾ ";
+}
+.about-blurb p {
+  margin: 8px 0 2px;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 /* ============ 並べ替えタブ ============ */
@@ -372,6 +398,7 @@ img { max-width: 100%; display: block; }
   color: var(--text-secondary);
 }
 
+
 /* ============ 作品プレイヤー（モーダル） ============ */
 
 .player-overlay {
@@ -422,6 +449,22 @@ img { max-width: 100%; display: block; }
   gap: 6px;
   flex-shrink: 0;
 }
+/* プレイ画面の「評価」「コメント」ボタン。⭐アイコン1つだと何のボタンか
+   分かりづらいという指摘があったので、文字ラベル2つに分けた */
+.player-action-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.player-action-btn.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: transparent;
+}
+/* 「縦画面」ボタン。PCでスマホ向けゲームを遊ぶときのための機能なので、
+   画面が狭い（＝もともとスマホ）ときは出さない */
+@media (max-width: 700px) {
+  .player-rotate-btn { display: none; }
+}
 
 .player-frame-wrap {
   flex: 1;
@@ -434,6 +477,22 @@ img { max-width: 100%; display: block; }
   width: 100%;
   height: 100%;
   border: none;
+}
+/* 縦画面モード: PCの横長ウィンドウの中に、スマホのような縦長の枠を作って
+   その中に作品を表示する。iframe側の中身（作品のCSS）は一切変えない */
+.player-overlay.force-portrait .player-frame-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.player-overlay.force-portrait .player-frame-wrap iframe {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 9 / 16;
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 /* ============ 評価・コメントモーダル ============ */
@@ -561,6 +620,7 @@ img { max-width: 100%; display: block; }
   cursor: pointer;
   text-decoration: underline;
 }
+
 
 /* ============ フォーム全般（投稿画面など） ============ */
 

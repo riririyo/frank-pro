@@ -20,6 +20,16 @@
     </div>
   </header>
 
+  <details class="about-blurb">
+    <summary>frank htmlとは？</summary>
+    <p>
+      AIのおかげで、誰でも簡単にHTMLでゲームやサービスを作れる時代になりました。
+      frank htmlは、そうやって作った作品をサクッと投稿して、遊んでくれた人からすぐ反応をもらい、
+      改善につなげていくための場所です。自分のアイデアが人にどう思ってもらえるか、気軽に試してみませんか？
+      投稿するのも遊ぶのも、完全無料です。
+    </p>
+  </details>
+
   <nav class="sort-tabs" id="sort-tabs"></nav>
 
   <main class="work-grid" id="work-grid">
@@ -39,7 +49,9 @@
         <a class="player-author-link" id="player-author-link" href="#" target="_blank" rel="noopener" hidden></a>
       </div>
       <div class="player-actions">
-        <button id="player-rate-btn" class="btn btn-icon" aria-label="評価する" title="評価する">⭐</button>
+        <button id="player-rotate-btn" class="btn player-action-btn player-rotate-btn" type="button" title="PCでスマホ用ゲームを縦画面で表示">縦画面</button>
+        <button id="player-rate-btn" class="btn player-action-btn" type="button">評価</button>
+        <button id="player-comment-btn" class="btn player-action-btn" type="button">コメント</button>
         <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
       </div>
     </div>

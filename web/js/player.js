@@ -17,11 +17,25 @@ export function initPlayer() {
   const overlay = document.getElementById("player-overlay");
   const closeBtn = document.getElementById("player-close");
   const rateBtn = document.getElementById("player-rate-btn");
+  const commentBtn = document.getElementById("player-comment-btn");
+  const rotateBtn = document.getElementById("player-rotate-btn");
 
   closeBtn.addEventListener("click", closePlayer);
+  // PCでスマホ向けゲームを遊ぶと横に間延びして見えるので、縦長の枠に収めるモード。
+  // 作品側のHTML/CSSはそのまま、表示する箱の形だけ変えている
+  rotateBtn.addEventListener("click", () => {
+    const active = overlay.classList.toggle("force-portrait");
+    rotateBtn.classList.toggle("active", active);
+  });
+  // ⭐アイコン1個だと何のボタンか分かりづらかったので「評価」「コメント」で分けた。
+  // 開く先は同じモーダル（rate-modal.js）で、押した方の内容までスクロールする
   rateBtn.addEventListener("click", () => {
     if (!currentWork) return;
-    openRateModal(currentWork.id, currentWork.title);
+    openRateModal(currentWork.id, currentWork.title, "rating");
+  });
+  commentBtn.addEventListener("click", () => {
+    if (!currentWork) return;
+    openRateModal(currentWork.id, currentWork.title, "comments");
   });
 
   // ブラウザの戻るボタンでも閉じる（history.pushStateと対にする）
@@ -108,11 +122,14 @@ export function closePlayer({ skipHistory = false } = {}) {
   const overlay = document.getElementById("player-overlay");
   const frameWrap = document.getElementById("player-frame-wrap");
   const authorLinkEl = document.getElementById("player-author-link");
+  const rotateBtn = document.getElementById("player-rotate-btn");
 
   // ここが要: src="" ではなく要素ごと除去する。裏で動かし続けると端末が熱くなるため
   frameWrap.innerHTML = "";
   overlay.hidden = true;
   authorLinkEl.hidden = true;
+  overlay.classList.remove("force-portrait");
+  rotateBtn.classList.remove("active");
   document.body.style.overflow = "";
   currentWork = null;
 

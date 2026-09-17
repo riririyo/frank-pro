@@ -84,7 +84,11 @@ function buildLoginWidget() {
       alert("送信に失敗しました: " + error.message);
       return;
     }
-    alert(`${email} 宛にログインリンクを送りました。メールを確認してください。`);
+    alert(
+      `${email} 宛にログインリンクを送りました。メールを確認してください。\n\n` +
+        `※メールの送信者名は「frank html」ではなく「Supabase」と表示されますが、` +
+        `frank htmlの認証の仕組み上そうなっているだけで、正規のメールです。`
+    );
     form.reset();
     form.hidden = true;
     loginBtn.hidden = false;
