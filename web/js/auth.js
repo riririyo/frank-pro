@@ -37,26 +37,62 @@ async function refreshAuthUI(slot) {
     slot.appendChild(myPageLink);
     slot.appendChild(signOutBtn);
   } else {
-    const loginBtn = document.createElement("button");
-    loginBtn.className = "btn btn-primary";
-    loginBtn.textContent = "ログイン";
-    loginBtn.addEventListener("click", promptLogin);
-    slot.appendChild(loginBtn);
+    slot.appendChild(buildLoginWidget());
   }
 }
 
-async function promptLogin() {
-  const email = prompt("ログイン用のメールアドレスを入力してください（ログインリンクを送ります）");
-  if (!email) return;
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: location.origin + "/submit.html" },
+// window.prompt()だとブラウザのメアド自動入力候補が出せず入力しづらいので、
+// 通常の<input type="email">を使ったその場展開フォームにしている
+function buildLoginWidget() {
+  const wrap = document.createElement("div");
+  wrap.className = "login-widget";
+
+  const loginBtn = document.createElement("button");
+  loginBtn.type = "button";
+  loginBtn.className = "btn btn-primary";
+  loginBtn.textContent = "ログイン";
+
+  const form = document.createElement("form");
+  form.className = "login-form";
+  form.hidden = true;
+  form.innerHTML = `
+    <input type="email" name="email" autocomplete="email" placeholder="メールアドレス" required />
+    <button type="submit" class="btn btn-primary">送信</button>
+  `;
+
+  loginBtn.addEventListener("click", () => {
+    form.hidden = false;
+    loginBtn.hidden = true;
+    form.querySelector("input").focus();
   });
-  if (error) {
-    alert("送信に失敗しました: " + error.message);
-    return;
-  }
-  alert(`${email} 宛にログインリンクを送りました。メールを確認してください。`);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = form.querySelector("input[name=email]");
+    const email = input.value.trim();
+    if (!email) return;
+
+    const submitBtn = form.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: location.origin + "/submit.html" },
+    });
+    submitBtn.disabled = false;
+
+    if (error) {
+      alert("送信に失敗しました: " + error.message);
+      return;
+    }
+    alert(`${email} 宛にログインリンクを送りました。メールを確認してください。`);
+    form.reset();
+    form.hidden = true;
+    loginBtn.hidden = false;
+  });
+
+  wrap.appendChild(loginBtn);
+  wrap.appendChild(form);
+  return wrap;
 }
 
 export async function requireAuth() {
