@@ -22,8 +22,14 @@
   <!-- 作品プレイヤー（一覧ページと共通の構造） -->
   <div class="player-overlay" id="player-overlay" hidden>
     <div class="player-topbar">
-      <span class="player-title" id="player-title"></span>
-      <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
+      <div class="player-title-block">
+        <span class="player-title" id="player-title"></span>
+        <a class="player-author-link" id="player-author-link" href="#" target="_blank" rel="noopener" hidden></a>
+      </div>
+      <div class="player-actions">
+        <button id="player-rate-btn" class="btn btn-icon" aria-label="評価する" title="評価する">⭐</button>
+        <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
+      </div>
     </div>
     <div class="player-frame-wrap" id="player-frame-wrap"></div>
   </div>
