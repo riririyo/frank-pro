@@ -21,10 +21,16 @@ export function initPlayer() {
 
   closeBtn.addEventListener("click", closePlayer);
   // PCでスマホ向けゲームを遊ぶと横に間延びして見えるので、縦長の枠に収めるモード。
-  // 作品側のHTML/CSSはそのまま、表示する箱の形だけ変えている
+  // 作品側のHTML/CSSはそのまま、表示する箱の形だけ変えている。
+  // 枠の左右に生まれる余白には、作者プロフィールとおすすめ作品を表示する
   rotateBtn.addEventListener("click", () => {
     const active = overlay.classList.toggle("force-portrait");
     rotateBtn.classList.toggle("active", active);
+    updatePortraitFrameSize();
+    updateSidePanels();
+  });
+  window.addEventListener("resize", () => {
+    if (overlay.classList.contains("force-portrait")) updatePortraitFrameSize();
   });
   // 評価とコメントは別々に操作できると誤解されやすかったので、
   // 「レビュー」1つのボタンにまとめた（開く先は同じモーダル。rate-modal.js）
@@ -118,12 +124,162 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
   iframe.setAttribute("loading", "eager");
   frameWrap.appendChild(iframe);
 
+  updatePortraitFrameSize();
+  updateSidePanels();
+
   if (!skipHistory) {
     history.pushState({ workId: work.id }, "", `?work=${work.id}`);
   }
 
   markPlayed(work.id);
   recordView(work.id);
+}
+
+// 縦画面モードのスマホ枠のピクセルサイズを計算する。
+// CSSのaspect-ratioだけに任せると、flexアイテムとしての幅が確定せず
+// 枠が正しく表示されないブラウザがあったため、JSで確実に計算する。
+const PORTRAIT_ASPECT = 9 / 16;
+
+function updatePortraitFrameSize() {
+  const overlay = document.getElementById("player-overlay");
+  const frameWrap = document.getElementById("player-frame-wrap");
+  if (!overlay || !frameWrap) return;
+
+  if (!overlay.classList.contains("force-portrait")) {
+    frameWrap.style.width = "";
+    frameWrap.style.height = "";
+    return;
+  }
+
+  const body = document.getElementById("player-body") || frameWrap.parentElement;
+  const rect = body.getBoundingClientRect();
+  const margin = 32; // 枠の周りに少し余白を残す
+  const availW = Math.max(240, rect.width - margin);
+  const availH = Math.max(320, rect.height - margin);
+
+  let h = availH;
+  let w = h * PORTRAIT_ASPECT;
+  if (w > availW) {
+    w = availW;
+    h = w / PORTRAIT_ASPECT;
+  }
+
+  frameWrap.style.width = `${Math.round(w)}px`;
+  frameWrap.style.height = `${Math.round(h)}px`;
+}
+
+// 縦画面モードの左右パネル（作者プロフィール／おすすめ作品）を更新する。
+// 通常モードに戻すときは中身を消して隠すだけ（枠自体は毎回作り直す）
+async function updateSidePanels() {
+  const overlay = document.getElementById("player-overlay");
+  const leftEl = document.getElementById("player-side-left");
+  const rightEl = document.getElementById("player-side-right");
+  if (!overlay || !leftEl || !rightEl) return;
+
+  if (!overlay.classList.contains("force-portrait") || !currentWork) {
+    leftEl.hidden = true;
+    rightEl.hidden = true;
+    leftEl.innerHTML = "";
+    rightEl.innerHTML = "";
+    return;
+  }
+
+  const work = currentWork;
+  leftEl.hidden = false;
+  rightEl.hidden = false;
+  leftEl.innerHTML = "<p class='form-hint'>読み込み中…</p>";
+  rightEl.innerHTML = "<p class='form-hint'>読み込み中…</p>";
+
+  const [{ data: profile }, { data: recoWorks }] = await Promise.all([
+    work.author_id
+      ? supabase.from("profiles").select("display_name, bio").eq("id", work.author_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("works")
+      .select("id, title, thumbnail_path")
+      .eq("status", "published")
+      .neq("id", work.id)
+      .order("rating_bayes", { ascending: false })
+      .limit(6),
+  ]);
+
+  if (currentWork?.id !== work.id) return; // 読み込み中に別作品へ切り替わっていたら反映しない
+
+  leftEl.innerHTML = "";
+  leftEl.appendChild(buildProfileSidePanel(work, profile));
+
+  rightEl.innerHTML = "";
+  const heading = document.createElement("div");
+  heading.className = "player-side-heading";
+  heading.textContent = "他のおすすめ作品";
+  rightEl.appendChild(heading);
+  if (recoWorks?.length) {
+    for (const w of recoWorks) rightEl.appendChild(buildRecoSideItem(w));
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "form-hint";
+    empty.textContent = "おすすめがまだありません。";
+    rightEl.appendChild(empty);
+  }
+}
+
+function buildProfileSidePanel(work, profile) {
+  const wrap = document.createElement("div");
+
+  const heading = document.createElement("div");
+  heading.className = "player-side-heading";
+  heading.textContent = "作者について";
+  wrap.appendChild(heading);
+
+  const card = document.createElement("div");
+  card.className = "player-side-profile";
+
+  const name = document.createElement("div");
+  name.className = "player-side-profile-name";
+  name.textContent = profile?.display_name ?? "名無し";
+  card.appendChild(name);
+
+  if (profile?.bio) {
+    const bio = document.createElement("p");
+    bio.className = "player-side-profile-bio";
+    bio.textContent = profile.bio;
+    card.appendChild(bio);
+  }
+
+  if (work.author_id) {
+    const link = document.createElement("a");
+    link.className = "btn";
+    link.href = `author.html?id=${work.author_id}`;
+    link.textContent = "作者の他の作品を見る";
+    card.appendChild(link);
+  }
+
+  wrap.appendChild(card);
+  return wrap;
+}
+
+function buildRecoSideItem(w) {
+  const item = document.createElement("div");
+  item.className = "player-side-reco-item";
+  item.addEventListener("click", () => openPlayer(w.id));
+
+  const thumb = document.createElement("div");
+  thumb.className = "player-side-reco-thumb";
+  if (w.thumbnail_path) {
+    const img = document.createElement("img");
+    img.src = w.thumbnail_path;
+    img.loading = "lazy";
+    img.alt = w.title;
+    thumb.appendChild(img);
+  }
+  item.appendChild(thumb);
+
+  const title = document.createElement("div");
+  title.className = "player-side-reco-title";
+  title.textContent = w.title;
+  item.appendChild(title);
+
+  return item;
 }
 
 export function closePlayer({ skipHistory = false } = {}) {
@@ -145,6 +301,12 @@ export function closePlayer({ skipHistory = false } = {}) {
   }
   overlay.classList.remove("force-portrait");
   rotateBtn.classList.remove("active");
+  frameWrap.style.width = "";
+  frameWrap.style.height = "";
+  const leftEl = document.getElementById("player-side-left");
+  const rightEl = document.getElementById("player-side-right");
+  if (leftEl) { leftEl.hidden = true; leftEl.innerHTML = ""; }
+  if (rightEl) { rightEl.hidden = true; rightEl.innerHTML = ""; }
   document.body.style.overflow = "";
   currentWork = null;
 

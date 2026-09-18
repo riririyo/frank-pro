@@ -142,6 +142,28 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // 管理画面のシステム状態チェックパネル用の軽量ヘルスチェック。
+    // シークレットの値は一切返さず「設定されているか」のbooleanだけ返す。
+    // 管理画面（サイト本体ドメイン）から別ドメインのこのWorkerへfetchで
+    // 読みに行くため、CORSヘッダを付けている（値を含まないのでオリジン制限はしていない）。
+    if (url.pathname === "/health") {
+      const supabaseUrlSet = Boolean(env.SUPABASE_URL);
+      const serviceRoleSet = Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
+      const ok = supabaseUrlSet && serviceRoleSet;
+      return new Response(
+        JSON.stringify({ ok, supabase_url_set: supabaseUrlSet, service_role_set: serviceRoleSet }),
+        {
+          status: ok ? 200 : 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "no-store",
+          },
+        }
+      );
+    }
+
     // 期待するパス形式: /w/<work_id>.html
     const match = url.pathname.match(/^\/w\/([A-Za-z0-9_-]+)\.html$/);
     if (!match) {

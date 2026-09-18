@@ -6,6 +6,14 @@
 // 実際にWorkerが配信するURL（本番と同じCSP・sandbox条件）を開いてスクリーンショットを撮る。
 // 常時ヘッドレスブラウザを動かすとGitHub Actionsの無料枠を超えるため、
 // 1日1回のこのバッチで未処理分だけまとめて処理する。
+//
+// 撮影ビューポートはスマホ縦画面比（9:16）にしている。以前は800x600の横長
+// ビューポートでそのまま撮っていたため、スマホ縦画面前提で作られたゲーム
+// （ほとんどの作品がそう）は中央に小さく縦長で表示され、左右が黒い余白に
+// なった状態でサムネイルになってしまっていた（一覧で「縦長の写真が混ざって
+// いるバグ」に見える原因）。実際に遊ばれる比率で撮ってから、
+// web/js/thumbnail-crop.js と同じ4:3に中央基準でクロップすることで、
+// 手動アップロード時のサムネイルと見た目を揃えている。
 
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
@@ -14,6 +22,14 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const WORKS_BASE_URL = process.env.WORKS_BASE_URL; // 例: https://works.frank.pro
 const THUMBNAILS_BUCKET = "thumbnails"; // Supabase Storage
+
+// スマホでの実際のプレイ比率に近いビューポートで撮影する
+const CAPTURE_WIDTH = 640;
+const CAPTURE_HEIGHT = 1138; // 640 * 16/9
+
+// サムネイルの最終比率。web/js/thumbnail-crop.js の THUMB_ASPECT と合わせること
+const THUMB_WIDTH = 640;
+const THUMB_HEIGHT = 480; // 4:3
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -33,14 +49,24 @@ async function main() {
   console.log(`${works.length}件のサムネイルを生成します`);
 
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
+  const page = await browser.newPage({ viewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT } });
 
   for (const work of works) {
     try {
       const url = `${WORKS_BASE_URL}/w/${work.id}.html`;
       await page.goto(url, { waitUntil: "networkidle", timeout: 15000 });
       await page.waitForTimeout(1500); // アニメーション等が始まるのを少し待つ
-      const buffer = await page.screenshot({ type: "jpeg", quality: 80 });
+      // 縦長で撮った画面の縦中央から4:3を切り出す（クロップUIの中央基準デフォルトと同じ考え方）
+      const buffer = await page.screenshot({
+        type: "jpeg",
+        quality: 80,
+        clip: {
+          x: 0,
+          y: Math.max(0, (CAPTURE_HEIGHT - THUMB_HEIGHT) / 2),
+          width: THUMB_WIDTH,
+          height: THUMB_HEIGHT,
+        },
+      });
 
       const path = `${work.id}.jpg`;
       const { error: uploadError } = await supabase.storage

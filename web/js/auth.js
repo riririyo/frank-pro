@@ -11,8 +11,18 @@ export function initAuthHeader() {
   supabase.auth.onAuthStateChange(() => refreshAuthUI(slot));
 }
 
+// ページを開いた瞬間、initAuthHeader()自身の呼び出しとonAuthStateChangeの
+// 初回発火（INITIAL_SESSION）がほぼ同時にrefreshAuthUIを呼ぶことがあり、
+// この関数はawaitをまたぐため、2つの呼び出しが競合してボタン（特にログアウト）が
+// 分裂して増えてしまうバグがあった。renderTokenで「自分が最新の呼び出しか」を
+// 各awaitの後に確認し、古い呼び出しはDOMに触れずに中断するようにしている。
+let renderToken = 0;
+
 async function refreshAuthUI(slot) {
+  const myToken = ++renderToken;
   const { data } = await supabase.auth.getUser();
+  if (myToken !== renderToken) return; // より新しい呼び出しに割り込まれたので中断
+
   slot.innerHTML = "";
 
   if (data?.user) {
@@ -43,6 +53,8 @@ async function refreshAuthUI(slot) {
       .select("is_admin")
       .eq("id", data.user.id)
       .maybeSingle();
+    if (myToken !== renderToken) return; // ここでも同様に、割り込まれていたら中断
+
     if (profile?.is_admin) {
       const adminLink = document.createElement("a");
       adminLink.className = "btn";
@@ -58,7 +70,7 @@ async function refreshAuthUI(slot) {
 }
 
 // window.prompt()だとブラウザのメアド自動入力候補が出せず入力しづらいので、
-// 通常の<input type="email">を使ったその場展開フォームにしている
+// 通常の<input type="email">を使ったその場展開フォーユにしている
 function buildLoginWidget() {
   const wrap = document.createElement("div");
   wrap.className = "login-widget";

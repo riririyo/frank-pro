@@ -41,6 +41,7 @@
   <footer class="site-footer">
     <a href="guidelines.html">投稿ガイドライン</a>
     <a href="terms.html">利用規約</a>
+    <a href="https://x.com/frank_html" target="_blank" rel="noopener noreferrer">ご要望・不具合報告は X (@frank_html) まで</a>
   </footer>
 
   <!-- 作品プレイヤー -->
@@ -60,8 +61,12 @@
       <summary>作品の説明を読む</summary>
       <p id="player-desc-text"></p>
     </details>
-    <div class="player-frame-wrap" id="player-frame-wrap">
-      <!-- iframeはJSで動的に生成・破棄する（player.js） -->
+    <div class="player-body" id="player-body">
+      <aside class="player-side player-side-left" id="player-side-left" hidden></aside>
+      <div class="player-frame-wrap" id="player-frame-wrap">
+        <!-- iframeはJSで動的に生成・破棄する（player.js） -->
+      </div>
+      <aside class="player-side player-side-right" id="player-side-right" hidden></aside>
     </div>
   </div>
 

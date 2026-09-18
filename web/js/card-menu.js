@@ -4,11 +4,12 @@
 // 以前は「レビューする」（評価+コメントが同じモーダル）1本だったが、
 // 評価だけ・コメントだけを見たい場合にも対応できるよう分割した。
 // 作者ページへの導線はカード左上の作者名リンク（author-link.js）にもあるが、
-// ⋮からも行けるようにしてある（重複していてよい、という運用判断）。
+// ⋮からも行けるようにしてもる（重複していてよい、という運用判断）。
 // 一覧（listing.js）・作者ページ（author.js）・履歴（history.js）の
 // いずれのカードからも共通で使う。
 
 import { openRateModal } from "./rate-modal.js";
+import { openReportModal } from "./report-modal.js";
 
 let openMenuEl = null;
 
@@ -73,6 +74,16 @@ export function buildCardMenuButton(card, work) {
       });
       menu.appendChild(authorBtn);
     }
+
+    const reportBtn = document.createElement("button");
+    reportBtn.type = "button";
+    reportBtn.textContent = "通報する";
+    reportBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      closeOpenMenu();
+      openReportModal(work.id, work.title);
+    });
+    menu.appendChild(reportBtn);
 
     card.appendChild(menu);
     openMenuEl = menu;
