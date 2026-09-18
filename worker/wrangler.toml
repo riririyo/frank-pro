@@ -4,4 +4,8 @@ compatibility_date = "2026-01-01"
 
 [vars]
 FRAME_ANCESTOR = "https://frank-pro.pages.dev"
-SUPABASE_STORAGE_BASE_URL = "https://tvaadeaojsolxsmmyznz.supabase.co/storage/v1/object/public/works"
+SUPABASE_URL = "https://tvaadeaojsolxsmmyznz.supabase.co"
+# SUPABASE_SERVICE_ROLE_KEY はここに書かない（秘密情報のため）。
+# デプロイ前に必ず `wrangler secret put SUPABASE_SERVICE_ROLE_KEY` で登録すること。
+# worksバケットが非公開化された後（supabase/migrations/0010_private_works_bucket.sql）、
+# このシークレットなしではWorkerが作品を一切配信できなくなる。

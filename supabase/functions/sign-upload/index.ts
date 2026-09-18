@@ -12,7 +12,7 @@
 //   2. サイズ・拡張子を検証
 //   3. works テーブルに status='published' で1行作る（file_pathを予約）
 //   4. Supabase Storageの署名付きアップロードURL（token）を発行して返す
-//   5. クライアントは supabase.storage.uploadToSignedUrl() でそのtokenを使って直接アップロードする
+//   5. クライアントは supabase.storage.uploadToSignedUrl() でそtokenを使って直接アップロードする
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get("authorization") ?? "";
-  const jwt = authHeader.replace(/^Bearer\s+/i, "");
+  const jwt = authHeader.replace(/^Bearers+/i, "");
   if (!jwt) {
     return json({ error: "authorization required" }, 401);
   }
@@ -52,6 +52,16 @@ Deno.serve(async (req) => {
     return json({ error: "invalid session" }, 401);
   }
   const userId = userData.user.id;
+
+  // BANされたユーザーは新規投稿できない
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_banned")
+    .eq("id", userId)
+    .maybeSingle();
+  if (profile?.is_banned) {
+    return json({ error: "このアカウントは投稿を停止されています" }, 403);
+  }
 
   let body: { title?: string; description?: string; category?: string; file_size_bytes?: number };
   try {
@@ -121,8 +131,8 @@ Deno.serve(async (req) => {
 function generateId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(12));
   return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
+    .replace(/+/g, "-")
+    .replace(///g, "_")
     .replace(/=+$/, "");
 }
 
