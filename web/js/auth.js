@@ -35,6 +35,22 @@ async function refreshAuthUI(slot) {
 
     slot.appendChild(submitLink);
     slot.appendChild(myPageLink);
+
+    // 管理者（profiles.is_admin）にだけ管理画面リンクを出す。
+    // 見た目上出さないだけで、admin.html自体もis_adminを再確認する
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (profile?.is_admin) {
+      const adminLink = document.createElement("a");
+      adminLink.className = "btn";
+      adminLink.href = "admin.html";
+      adminLink.textContent = "管理画面";
+      slot.appendChild(adminLink);
+    }
+
     slot.appendChild(signOutBtn);
   } else {
     slot.appendChild(buildLoginWidget());
@@ -85,9 +101,11 @@ function buildLoginWidget() {
       return;
     }
     alert(
-      `${email} 宛にログインリンクを送りました。メールを確認してください。\n\n` +
+      `${email} 宛にログインリンクを送りました。メールを確認してください。
+
+` +
         `※メールの送信者名は「frank html」ではなく「Supabase」と表示されますが、` +
-        `frank htmlの認証の仕組み上そうなっているだけで、正規のメールです。`
+        `frank htmlの認証の仵組み上そうなっているだけで、正規のメールです。`
     );
     form.reset();
     form.hidden = true;

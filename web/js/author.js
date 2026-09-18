@@ -5,6 +5,7 @@ import { supabase } from "./supabaseClient.js";
 import { openPlayer } from "./player.js";
 import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
+import { buildWorkThumbAuthorLink } from "./author-link.js";
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
 
@@ -20,7 +21,7 @@ export async function initAuthorPage() {
     supabase.from("profiles").select("display_name, bio, sns_links").eq("id", authorId).maybeSingle(),
     supabase
       .from("works")
-      .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg")
+      .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, author_id")
       .eq("author_id", authorId)
       .eq("status", "published")
       .order("created_at", { ascending: false }),
@@ -30,16 +31,24 @@ export async function initAuthorPage() {
   root.innerHTML = "";
 
   const header = document.createElement("div");
-  header.innerHTML = `
-    <h1>${escapeHtml(profile?.display_name ?? "名無し")}</h1>
-    ${profile?.bio ? `<p>${escapeHtml(profile.bio)}</p>` : ""}
-  `;
+  const nameEl = document.createElement("h1");
+  nameEl.textContent = profile?.display_name ?? "名無し";
+  header.appendChild(nameEl);
+  if (profile?.bio) {
+    const bioEl = document.createElement("p");
+    bioEl.textContent = profile.bio;
+    header.appendChild(bioEl);
+  }
   if (profile?.sns_links?.length) {
     const links = document.createElement("div");
     links.style.display = "flex";
     links.style.gap = "12px";
     links.style.marginBottom = "24px";
     for (const link of profile.sns_links) {
+      // sns_linksはprofiles.update()で直接書き込めるため、保存時のバリデーション
+      // （mypage.js）を経由していない値が来る可能性がある。javascript:等の
+      // 危険なスキームを踏まないよう、表示側でもhttp/https以外は弾く
+      if (!isHttpUrl(link.url)) continue;
       const a = document.createElement("a");
       a.href = link.url;
       a.textContent = link.platform;
@@ -59,33 +68,81 @@ export async function initAuthorPage() {
     grid.innerHTML = "<div class='empty-state'>まだ投稿がありません。</div>";
   } else {
     for (const w of works) {
-      const card = document.createElement("div");
-      card.className = "work-card";
-      card.addEventListener("click", () => openPlayer(w.id));
-      const genreLabel = GENRE_LABELS[w.category];
-      card.innerHTML = `
-        <div class="work-thumb-wrap">
-          <div class="work-thumb"></div>
-          ${genreLabel ? `<div class="genre-badge">${genreLabel}</div>` : ""}
-        </div>
-        <div class="work-meta">
-          <div class="work-title">${escapeHtml(w.title)}</div>
-          <div class="work-meta-row">
-            <div class="work-stats">${w.rating_count > 0 ? `★ ${w.rating_avg.toFixed(1)}` : "評価なし"} · ${w.access_count}回</div>
-          </div>
-        </div>
-      `;
-      const descEl = buildWorkDescEl(w.description);
-      if (descEl) card.querySelector(".work-title").insertAdjacentElement("afterend", descEl);
-      card.querySelector(".work-meta-row").appendChild(buildCardMenuButton(card, w));
-      grid.appendChild(card);
+      grid.appendChild(buildWorkCard(w, profile?.display_name));
     }
   }
   root.appendChild(grid);
 }
 
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+// このページの作品はすべて同じ作者なので、一覧(listing.js)のように作者名を
+// 1件ずつ問い合わせる必要はなく、既に取得済みのdisplay_nameをそのまま使う。
+// 以前はここで<div class="work-thumb"></div>を空のまま作っていたため
+// サムネイル画像が一切表示されないバグがあった（thumbnail_pathは取得済みなのに使っていなかった）
+function buildWorkCard(work, displayName) {
+  const card = document.createElement("div");
+  card.className = "work-card";
+  card.addEventListener("click", () => openPlayer(work.id));
+
+  const thumbWrap = document.createElement("div");
+  thumbWrap.className = "work-thumb-wrap";
+  const thumb = document.createElement("div");
+  thumb.className = "work-thumb";
+  if (work.thumbnail_path) {
+    const img = document.createElement("img");
+    img.src = work.thumbnail_path;
+    img.loading = "lazy";
+    img.alt = work.title;
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+    thumb.appendChild(img);
+  }
+  thumbWrap.appendChild(thumb);
+
+  if (work.author_id) {
+    thumbWrap.appendChild(buildWorkThumbAuthorLink(work.author_id, displayName));
+  }
+
+  const genreLabel = GENRE_LABELS[work.category];
+  if (genreLabel) {
+    const genreBadge = document.createElement("div");
+    genreBadge.className = "genre-badge";
+    genreBadge.textContent = genreLabel;
+    thumbWrap.appendChild(genreBadge);
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "work-meta";
+
+  const title = document.createElement("div");
+  title.className = "work-title";
+  title.textContent = work.title;
+  meta.appendChild(title);
+
+  const descEl = buildWorkDescEl(work.description);
+  if (descEl) meta.appendChild(descEl);
+
+  const stats = document.createElement("div");
+  stats.className = "work-stats";
+  stats.textContent =
+    work.rating_count > 0 ? `★ ${work.rating_avg.toFixed(1)} ・ ${work.access_count}回` : `評価なし ・ ${work.access_count}回`;
+
+  const metaRow = document.createElement("div");
+  metaRow.className = "work-meta-row";
+  metaRow.appendChild(stats);
+  metaRow.appendChild(buildCardMenuButton(card, work));
+  meta.appendChild(metaRow);
+
+  card.appendChild(thumbWrap);
+  card.appendChild(meta);
+  return card;
+}
+
+function isHttpUrl(value) {
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
 }

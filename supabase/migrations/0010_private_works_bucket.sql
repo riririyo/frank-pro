@@ -9,7 +9,7 @@
 -- security-design.md 1章で最重要としているCSP sandboxヘッダが一切付かない
 -- 状態でHTMLを直接開けてしまっていた。つまり:
 --   - 「削除」してWorker側の配信を止めても、直リンクを知っていれば見られる
---   - 公開中の作品ですら、直リンクを踏めば隣離（opaque origin化）されずに開ける
+--   - 公開中の作品ですら、直リンクを踏めば隔離（opaque origin化）されずに開ける
 --     （＝security-design.mdが最も警戒していた「配信ドメインの正規オリジンとして
 --       動いてしまう」状態そのもの）
 --
@@ -34,4 +34,4 @@ drop policy if exists "works_bucket_select_all" on storage.objects;
 
 -- Workerはservice_role keyで読みに行くため、service_roleはRLSを常にバイパスする
 -- （テーブル所有者と同様の扱い）ので、anon/authenticated向けの新しいSELECT
--- ポリシーは作らない＝＝Workerを経由しない限り誰も読めない状態になる。
+-- ポリシーは作らない＝Workerを経由しない限り誰も読めない状態になる。
