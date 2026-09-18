@@ -70,7 +70,7 @@ async function refreshAuthUI(slot) {
 }
 
 // window.prompt()だとブラウザのメアド自動入力候補が出せず入力しづらいので、
-// 通常の<input type="email">を使ったその場展開フォーユにしている
+// 通常の<input type="email">を使ったその場展開フォームにしている
 function buildLoginWidget() {
   const wrap = document.createElement("div");
   wrap.className = "login-widget";
