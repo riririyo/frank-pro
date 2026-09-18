@@ -125,7 +125,7 @@ function buildWorkCard(work, displayName) {
   const stats = document.createElement("div");
   stats.className = "work-stats";
   stats.textContent =
-    work.rating_count > 0 ? `★ ${work.rating_avg.toFixed(1)} ・ ${work.access_count}回` : `評価なし ・ ${work.access_count}回`;
+    work.rating_count > 0 ? `★ ${work.rating_avg.toFixed(1)} · ${work.access_count}回` : `評価なし · ${work.access_count}回`;
 
   const metaRow = document.createElement("div");
   metaRow.className = "work-meta-row";

@@ -18,7 +18,7 @@ export const CONFIG = {
     SUBMIT_COMMENT_URL: "https://tvaadeaojsolxsmmyznz.supabase.co/functions/v1/submit-comment",
     SIGN_UPLOAD_URL: "https://tvaadeaojsolxsmmyznz.supabase.co/functions/v1/sign-upload",
     TRIGGER_THUMBNAIL_URL: "https://tvaadeaojsolxsmmyznz.supabase.co/functions/v1/trigger-thumbnail",
-        ADMIN_ACTION_URL: "https://tvaadeaojsolxsmmyznz.supabase.co/functions/v1/admin-action",
+    ADMIN_ACTION_URL: "https://tvaadeaojsolxsmmyznz.supabase.co/functions/v1/admin-action",
 
     MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024, // 5MB
 };

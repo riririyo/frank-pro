@@ -101,11 +101,9 @@ function buildLoginWidget() {
       return;
     }
     alert(
-      `${email} 宛にログインリンクを送りました。メールを確認してください。
-
-` +
+      `${email} 宛にログインリンクを送りました。メールを確認してください。\n\n` +
         `※メールの送信者名は「frank html」ではなく「Supabase」と表示されますが、` +
-        `frank htmlの認証の仵組み上そうなっているだけで、正規のメールです。`
+        `frank htmlの認証の仕組み上そうなっているだけで、正規のメールです。`
     );
     form.reset();
     form.hidden = true;
