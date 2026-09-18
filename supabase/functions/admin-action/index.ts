@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get("authorization") ?? "";
-  const jwt = authHeader.replace(/^Bearers+/i, "");
+  const jwt = authHeader.replace(/^Bearer\s+/i, "");
   if (!jwt) {
     return json({ error: "authorization required" }, 401);
   }

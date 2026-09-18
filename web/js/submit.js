@@ -267,7 +267,14 @@ async function handleSubmit({ submitBtn }) {
       .uploadToSignedUrl(signJson.path, signJson.token, selectedFile, {
         contentType: signJson.content_type,
       });
-    if (uploadError) throw new Error("ファイルのアップロードに失敗しました");
+    if (uploadError) {
+      // sign-uploadの時点でworks行はもう作られている（status: 'published'）。
+      // ここで失敗した場合、掃除しないとファイルの実体が無い「壊れた投稿」が
+      // 一覧に残り続けてしまうので、作成済みの行を削除しておく
+      // （works_delete_ownポリシーにより本人の行は削除できる）。
+      await supabase.from("works").delete().eq("id", signJson.work_id);
+      throw new Error("ファイルのアップロードに失敗しました");
+    }
 
     // サムネイルは任意項目なので、失敗しても投稿自体は成功扱いにする
     // （未設定のままなら自動生成される。0004_storage.sql / 0001_init.sqlのthumbnail_source参照）

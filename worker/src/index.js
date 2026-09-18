@@ -6,7 +6,7 @@
  *      隔離のためのヘッダを「必ず」付けて返す
  *   2. works.status が 'published' の作品だけを配信する（削除・非公開の作品は
  *      たとえHTMLの実体がストレージに残っていても、このWorker経由では一切見えない）
- *   3. Cloudflareのエッジにキャッシュして、Supabase Storage側の帯域消費を抱える
+ *   3. Cloudflareのエッジにキャッシュして、Supabase Storage側の帯域消費を抑える
  *      （投稿HTMLは一度置いたら書き換わらない前提なので、ある程度長いTTLで問題ない）
  *
  * ヘッダをストレージのオブジェクトメタデータ任せにしないのがポイント。
@@ -21,9 +21,9 @@
  * 【非公開バケット化について（重要）】
  * worksバケットは以前 public: true で作成されていたが、これだと
  *   {SUPABASE_URL}/storage/v1/object/public/works/<id>.html
- * という認証不要のURLを直接叛けば、このWorkerを完全に迂回できてしまっていた
- *（= このファイルが実装しているsandbox等のヘッダが一切効かない状態）。加えて「削除」した作品もこの
- * 直リンク経由なら見えてしまっていた。
+ * という認証不要のURLを直接叩けば、このWorkerを完全に迂回してヘッダなしでHTMLの
+ * 実体が取れてしまっていた（= このファイルが実装しているsandbox等のヘッダが
+ * 一切効かない状態）。加えて「削除」した作品もこの直リンク経由なら見えてしまっていた。
  * supabase/migrations/0010_private_works_bucket.sql でバケットをpublic: falseに
  * 変更したため、このWorkerはservice_role keyを使った認証付きダウンロードに
  * 切り替える必要があり、それを実装したのがこのファイル。
@@ -51,7 +51,7 @@ const SECURITY_HEADERS = {
   "Referrer-Policy": "no-referrer",
   "Permissions-Policy":
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), midi=(), display-capture=(), idle-detection=()",
-  // CSPは複数行に分けて書けないので、1行にまとめる
+  // CSPは複数行に分けて書けないので1行にまとめる
   "Content-Security-Policy": [
     "sandbox allow-scripts allow-pointer-lock",
     "default-src 'none'",
@@ -85,7 +85,7 @@ export default {
 
     const url = new URL(request.url);
     // 期待するパス形式: /w/<work_id>.html
-    const match = url.pathname.match(/^/w/([A-Za-z0-9_-]+).html$/);
+    const match = url.pathname.match(/^\/w\/([A-Za-z0-9_-]+)\.html$/);
     if (!match) {
       return new Response("not found", { status: 404 });
     }
@@ -126,7 +126,7 @@ export default {
     }
 
     // 2. 非公開バケットから、service_role権限の認証付きダウンロードエンドポイントで取得する
-    //    （publicエンドポイントと違い、誰でも直接叛けるURLではない）
+    //    （publicエンドポイントと違い、誰でも直接叩けるURLではない）
     const objectUrl = `${env.SUPABASE_URL}/storage/v1/object/works/${workId}.html`;
     const origin = await fetch(objectUrl, {
       headers: authHeaders,

@@ -9,6 +9,7 @@ import { openPlayer } from "./player.js";
 import { getPlayHistory, clearPlayHistory } from "./visitor.js";
 import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
+import { fetchDisplayNames, buildWorkThumbAuthorLink } from "./author-link.js";
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
 
@@ -30,7 +31,7 @@ async function renderHistoryPage() {
   const ids = history.map((e) => e.id);
   const { data: works, error } = await supabase
     .from("works")
-    .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg")
+    .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, author_id")
     .in("id", ids)
     .eq("status", "published");
 
@@ -73,11 +74,12 @@ async function renderHistoryPage() {
 
   const grid = document.createElement("div");
   grid.className = "work-grid";
-  for (const w of orderedWorks) grid.appendChild(buildCard(w));
+  const names = await fetchDisplayNames(orderedWorks.map((w) => w.author_id));
+  for (const w of orderedWorks) grid.appendChild(buildCard(w, names));
   root.appendChild(grid);
 }
 
-function buildCard(work) {
+function buildCard(work, authorNames) {
   const card = document.createElement("div");
   card.className = "work-card";
   card.addEventListener("click", () => openPlayer(work.id));
@@ -97,6 +99,10 @@ function buildCard(work) {
     thumb.appendChild(img);
   }
   thumbWrap.appendChild(thumb);
+
+  if (work.author_id) {
+    thumbWrap.appendChild(buildWorkThumbAuthorLink(work.author_id, authorNames?.get(work.author_id)));
+  }
 
   if (GENRE_LABELS[work.category]) {
     const genreBadge = document.createElement("div");

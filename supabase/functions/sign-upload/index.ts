@@ -12,7 +12,7 @@
 //   2. サイズ・拡張子を検証
 //   3. works テーブルに status='published' で1行作る（file_pathを予約）
 //   4. Supabase Storageの署名付きアップロードURL（token）を発行して返す
-//   5. クライアントは supabase.storage.uploadToSignedUrl() でそtokenを使って直接アップロードする
+//   5. クライアントは supabase.storage.uploadToSignedUrl() でそのtokenを使って直接アップロードする
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get("authorization") ?? "";
-  const jwt = authHeader.replace(/^Bearers+/i, "");
+  const jwt = authHeader.replace(/^Bearer\s+/i, "");
   if (!jwt) {
     return json({ error: "authorization required" }, 401);
   }
@@ -131,8 +131,8 @@ Deno.serve(async (req) => {
 function generateId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(12));
   return btoa(String.fromCharCode(...bytes))
-    .replace(/+/g, "-")
-    .replace(///g, "_")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
     .replace(/=+$/, "");
 }
 

@@ -1,8 +1,12 @@
 // frank pro — 作品カードの「⋮」メニュー
 //
-// レビュー（評価・コメント）は常時表示だとプレイ画面を圧迫するので、
-// 一覧・作者ページのカードから「⋮」→「レビューする」で開く方式にした（rate-modal.js）。
-// 一覧ページ（listing.js）・作者ページ（author.js）の両方から共通で使う。
+// 「評価する」「コメントを見る」「作者のページへ」の3項目。
+// 以前は「レビューする」（評価+コメントが同じモーダル）1本だったが、
+// 評価だけ・コメントだけを見たい場合にも対応できるよう分割した。
+// 作者ページへの導線はカード左上の作者名リンク（author-link.js）にもあるが、
+// ⋮からも行けるようにしてある（重複していてよい、という運用判断）。
+// 一覧（listing.js）・作者ページ（author.js）・履歴（history.js）の
+// いずれのカードからも共通で使う。
 
 import { openRateModal } from "./rate-modal.js";
 
@@ -18,7 +22,7 @@ function closeOpenMenu() {
 }
 
 // card: メニューボタンとポップアップの両方を追加する先（position: relative が必要）
-// work: { id, title } を持つオブジェクト
+// work: { id, title, author_id } を持つオブジェクト（author_idが無ければ「作者のページへ」は出さない）
 export function buildCardMenuButton(card, work) {
   const btn = document.createElement("button");
   btn.type = "button";
@@ -40,13 +44,35 @@ export function buildCardMenuButton(card, work) {
 
     const rateBtn = document.createElement("button");
     rateBtn.type = "button";
-    rateBtn.textContent = "レビューする";
+    rateBtn.textContent = "評価する";
     rateBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
       closeOpenMenu();
-      openRateModal(work.id, work.title);
+      openRateModal(work.id, work.title, { mode: "rating" });
     });
     menu.appendChild(rateBtn);
+
+    const commentBtn = document.createElement("button");
+    commentBtn.type = "button";
+    commentBtn.textContent = "コメントを見る";
+    commentBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      closeOpenMenu();
+      openRateModal(work.id, work.title, { mode: "comments" });
+    });
+    menu.appendChild(commentBtn);
+
+    if (work.author_id) {
+      const authorBtn = document.createElement("button");
+      authorBtn.type = "button";
+      authorBtn.textContent = "作者のページへ";
+      authorBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        closeOpenMenu();
+        location.href = `author.html?id=${work.author_id}`;
+      });
+      menu.appendChild(authorBtn);
+    }
 
     card.appendChild(menu);
     openMenuEl = menu;

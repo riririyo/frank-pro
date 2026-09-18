@@ -8,14 +8,17 @@ import { openPlayer } from "./player.js";
 import { getPlayedIds } from "./visitor.js";
 import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
+import { fetchDisplayNames, buildWorkThumbAuthorLink } from "./author-link.js";
 
 const PAGE_SIZE = 24;
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
 
+// 初期表示は「アクセス数」順（新規順だと0本〜数本の時期に荒れやすいため）。
+// 並び順自体は引き続き4種から選べる
 const SORT_OPTIONS = [
-  { key: "new", label: "新規", column: "created_at", ascending: false },
   { key: "access", label: "アクセス数", column: "access_count", ascending: false },
+  { key: "new", label: "新規", column: "created_at", ascending: false },
   { key: "rating_count", label: "評価数", column: "rating_count", ascending: false },
   { key: "rating_bayes", label: "評価率", column: "rating_bayes", ascending: false },
 ];
@@ -68,7 +71,8 @@ async function loadInitial() {
     grid.innerHTML = "<div class='empty-state'>まだ作品がありません。最初の投稿者になりませんか？</div>";
     return;
   }
-  for (const w of works) grid.appendChild(buildCard(w));
+  const names = await fetchDisplayNames(works.map((w) => w.author_id));
+  for (const w of works) grid.appendChild(buildCard(w, names));
   currentOffset = works.length;
 }
 
@@ -76,7 +80,8 @@ async function loadMore() {
   loading = true;
   const works = await fetchPage();
   const grid = document.getElementById("work-grid");
-  for (const w of works) grid.appendChild(buildCard(w));
+  const names = await fetchDisplayNames(works.map((w) => w.author_id));
+  for (const w of works) grid.appendChild(buildCard(w, names));
   currentOffset += works.length;
   if (works.length < PAGE_SIZE) reachedEnd = true;
   loading = false;
@@ -86,7 +91,9 @@ async function fetchPage() {
   loading = true;
   const { data, error } = await supabase
     .from("works")
-    .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, rating_bayes, created_at")
+    .select(
+      "id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, rating_bayes, created_at, author_id"
+    )
     .eq("status", "published")
     .order(currentSort.column, { ascending: currentSort.ascending })
     .range(currentOffset, currentOffset + PAGE_SIZE - 1);
@@ -99,7 +106,7 @@ async function fetchPage() {
   return data ?? [];
 }
 
-function buildCard(work) {
+function buildCard(work, authorNames) {
   const played = getPlayedIds();
 
   const card = document.createElement("div");
@@ -123,6 +130,10 @@ function buildCard(work) {
     thumb.textContent = "";
   }
   thumbWrap.appendChild(thumb);
+
+  if (work.author_id) {
+    thumbWrap.appendChild(buildWorkThumbAuthorLink(work.author_id, authorNames?.get(work.author_id)));
+  }
 
   if (GENRE_LABELS[work.category]) {
     const genreBadge = document.createElement("div");

@@ -22,7 +22,9 @@ export function initRateModal() {
   });
 }
 
-export function openRateModal(workId, title) {
+// mode: "both"（既定。プレイ画面の「レビュー」ボタン用）/ "rating"（評価のみ）/ "comments"（コメントのみ）
+// 「評価する」「コメントを見る」がカードメニューから別々に開けるようにするための分岐（card-menu.js）
+export function openRateModal(workId, title, { mode = "both" } = {}) {
   const overlay = document.getElementById("rate-modal-overlay");
   if (!overlay) return;
 
@@ -30,8 +32,13 @@ export function openRateModal(workId, title) {
   overlay.hidden = false;
   document.body.style.overflow = "hidden";
 
-  renderRatingWidget(document.getElementById("rate-modal-rating"), workId);
-  renderComments(document.getElementById("rate-modal-comments"), workId);
+  const ratingEl = document.getElementById("rate-modal-rating");
+  const commentsEl = document.getElementById("rate-modal-comments");
+  ratingEl.hidden = mode === "comments";
+  commentsEl.hidden = mode === "rating";
+
+  if (mode !== "comments") renderRatingWidget(ratingEl, workId);
+  if (mode !== "rating") renderComments(commentsEl, workId);
 }
 
 export function closeRateModal() {
