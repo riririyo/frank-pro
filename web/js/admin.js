@@ -135,6 +135,17 @@ function buildWorkRow(work) {
       })
     );
   }
+  if (work.status !== "published") {
+    // 非表示・削除済み作品の中身を、通報内容の緊急確認のためだけに見られるようにする。
+    // 発行されるURLは5分だけ有効（サーバー側で失効）で、CSP sandbox等の隔離ヘッダは
+    // 通常配信と同じものが付く。普段使う機能ではないので目立たせすぎない。
+    actions.appendChild(
+      buildActionBtn("中身を見る（緊急確認用）", async () => {
+        const res = await callAdminAction({ action: "get_preview_url", work_id: work.id });
+        window.open(res.url, "_blank", "noopener,noreferrer");
+      })
+    );
+  }
   actions.appendChild(
     buildActionBtn(
       "完全に削除する",

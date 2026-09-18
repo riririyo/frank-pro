@@ -9,3 +9,10 @@ SUPABASE_URL = "https://tvaadeaojsolxsmmyznz.supabase.co"
 # デプロイ前に必ず `wrangler secret put SUPABASE_SERVICE_ROLE_KEY` で登録すること。
 # worksバケットが非公開化された後（supabase/migrations/0010_private_works_bucket.sql）、
 # このシークレットなしではWorkerが作品を一切配信できなくなる。
+#
+# ADMIN_PREVIEW_SECRET もここに書かない（秘密情報のため）。
+# `wrangler secret put ADMIN_PREVIEW_SECRET` で登録すること。値は
+# supabase/functions/admin-action 側の同名シークレットと完全に一致させる必要がある
+# （管理者プレビュー機能のHMAC署名鍵。削除・非公開にした作品の中身を管理者だけが
+# 緊急確認できるようにするためのもの。docs参照: worker/src/index.js 冒頭コメント）。
+# 未設定でも通常配信には影響しない（プレビュー機能が使えないだけ）。
