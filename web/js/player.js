@@ -16,8 +16,7 @@ let currentWork = null;
 export function initPlayer() {
   const overlay = document.getElementById("player-overlay");
   const closeBtn = document.getElementById("player-close");
-  const rateBtn = document.getElementById("player-rate-btn");
-  const commentBtn = document.getElementById("player-comment-btn");
+  const reviewBtn = document.getElementById("player-review-btn");
   const rotateBtn = document.getElementById("player-rotate-btn");
 
   closeBtn.addEventListener("click", closePlayer);
@@ -27,15 +26,11 @@ export function initPlayer() {
     const active = overlay.classList.toggle("force-portrait");
     rotateBtn.classList.toggle("active", active);
   });
-  // ⭐アイコン1個だと何のボタンか分かりづらかったので「評価」「コメント」で分けた。
-  // 開く先は同じモーダル（rate-modal.js）で、押した方の内容までスクロールする
-  rateBtn.addEventListener("click", () => {
+  // 評価とコメントは別々に操作できると誤解されやすかったので、
+  // 「レビュー」1つのボタンにまとめた（開く先は同じモーダル。rate-modal.js）
+  reviewBtn.addEventListener("click", () => {
     if (!currentWork) return;
-    openRateModal(currentWork.id, currentWork.title, "rating");
-  });
-  commentBtn.addEventListener("click", () => {
-    if (!currentWork) return;
-    openRateModal(currentWork.id, currentWork.title, "comments");
+    openRateModal(currentWork.id, currentWork.title);
   });
 
   // ブラウザの戻るボタンでも閉じる（history.pushStateと対にする）
@@ -60,6 +55,8 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
   const frameWrap = document.getElementById("player-frame-wrap");
   const titleEl = document.getElementById("player-title");
   const authorLinkEl = document.getElementById("player-author-link");
+  const descDetailsEl = document.getElementById("player-desc");
+  const descTextEl = document.getElementById("player-desc-text");
 
   const { data: work, error } = await supabase
     .from("works")
@@ -78,8 +75,19 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
   overlay.hidden = false;
   document.body.style.overflow = "hidden";
 
+  // 説明文は入っていることに気づいてもらえていなかったので上部バーで読めるようにした。
+  // 閉じている間（<details>のデフォルト状態）はゲーム画面を圧迫しない
+  if (descDetailsEl && descTextEl) {
+    const description = (work.description || "").trim();
+    descTextEl.textContent = description;
+    descDetailsEl.hidden = !description;
+    descDetailsEl.open = false;
+  }
+
   // 作者の公開プロフィール（author.html）へのリンク。表示名が未設定でも
-  // author.htmlは開けるので、その場合は汎用の文言でリンクだけは出す
+  // author.htmlは開けるので、その場合は汎用の文言でリンクだけは出す。
+  // 単なるテキストだと押せると気づかれにくかったので、チップ風の見た目と
+  // 矢印（›）を付けて「押せるボタン」だとわかるようにしている
   authorLinkEl.hidden = true;
   if (work.author_id) {
     authorLinkEl.href = `author.html?id=${work.author_id}`;
@@ -91,8 +99,8 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
       .then(({ data: profile }) => {
         if (currentWork?.id !== work.id) return; // 読み込み中に別作品に切り替わっていたら反映しない
         authorLinkEl.textContent = profile?.display_name
-          ? `by ${profile.display_name}`
-          : "作者ページを見る";
+          ? `by ${profile.display_name} ›`
+          : "作者ページを見る ›";
         authorLinkEl.hidden = false;
       });
   }
@@ -123,11 +131,18 @@ export function closePlayer({ skipHistory = false } = {}) {
   const frameWrap = document.getElementById("player-frame-wrap");
   const authorLinkEl = document.getElementById("player-author-link");
   const rotateBtn = document.getElementById("player-rotate-btn");
+  const descDetailsEl = document.getElementById("player-desc");
+  const descTextEl = document.getElementById("player-desc-text");
 
   // ここが要: src="" ではなく要素ごと除去する。裏で動かし続けると端末が熱くなるため
   frameWrap.innerHTML = "";
   overlay.hidden = true;
   authorLinkEl.hidden = true;
+  if (descDetailsEl && descTextEl) {
+    descDetailsEl.hidden = true;
+    descDetailsEl.open = false;
+    descTextEl.textContent = "";
+  }
   overlay.classList.remove("force-portrait");
   rotateBtn.classList.remove("active");
   document.body.style.overflow = "";

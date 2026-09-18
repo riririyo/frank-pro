@@ -1,7 +1,8 @@
-// frank pro — 評価・コメントモーダル
+// frank pro — レビュー（評価・コメント）モーダル
 //
 // プレイ画面（player.js）とは独立している。
-// 一覧カードの「⋮」メニュー →「評価する」から開く（listing.js / author.js）。
+// プレイ画面の「レビュー」ボタン、一覧カードの「⋮」メニュー →「レビューする」
+// （listing.js / author.js / card-menu.js）の両方から同じモーダルを開く。
 // プレイ中の画面を圧迫しないよう、評価・コメントはここに切り出した。
 
 import { renderRatingWidget } from "./rating.js";
@@ -21,10 +22,7 @@ export function initRateModal() {
   });
 }
 
-// focus: "rating"（デフォルト）か "comments"。
-// プレイ画面に「評価」「コメント」の2ボタンを置いたので、押した方の内容が
-// 開いた瞬間に見えるよう、該当セクションまでスクロールする
-export function openRateModal(workId, title, focus = "rating") {
+export function openRateModal(workId, title) {
   const overlay = document.getElementById("rate-modal-overlay");
   if (!overlay) return;
 
@@ -32,14 +30,8 @@ export function openRateModal(workId, title, focus = "rating") {
   overlay.hidden = false;
   document.body.style.overflow = "hidden";
 
-  const commentsEl = document.getElementById("rate-modal-comments");
   renderRatingWidget(document.getElementById("rate-modal-rating"), workId);
-  renderComments(commentsEl, workId);
-
-  if (focus === "comments") {
-    // 中身の描画が終わってから。setTimeout(0)で描画後の次フレームまで遅らせる
-    setTimeout(() => commentsEl.scrollIntoView({ block: "start" }), 0);
-  }
+  renderComments(document.getElementById("rate-modal-comments"), workId);
 }
 
 export function closeRateModal() {

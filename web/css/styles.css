@@ -345,6 +345,18 @@ img { max-width: 100%; display: block; }
 }
 .work-stats .stars { color: var(--star-filled); }
 
+.work-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.work-desc-more {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--accent);
+  padding-left: 2px;
+}
+
 .work-meta-row {
   display: flex;
   align-items: center;
@@ -391,6 +403,15 @@ img { max-width: 100%; display: block; }
 }
 .card-menu button:hover { background: var(--surface-elevated); }
 
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.history-count { font-size: 13px; color: var(--text-secondary); }
+
 .empty-state, .loading-state {
   grid-column: 1 / -1;
   text-align: center;
@@ -432,15 +453,30 @@ img { max-width: 100%; display: block; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 単なるテキストだと押せるボタンだと気づかれにくかったので、チップ風の
+   見た目にして「押せる」ことを分かりやすくしている */
 .player-author-link {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
 }
-.player-author-link:hover { text-decoration: underline; }
+.player-author-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 .player-author-link[hidden] { display: none; }
 
 .player-actions {
@@ -464,6 +500,31 @@ img { max-width: 100%; display: block; }
    画面が狭い（＝もともとスマホ）ときは出さない */
 @media (max-width: 700px) {
   .player-rotate-btn { display: none; }
+}
+
+/* 説明文の開閉パネル。閉じている間（デフォルト）は高さ0でゲーム画面を
+   圧迫しない。押したときだけ展開される */
+.player-desc {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 6px max(12px, env(safe-area-inset-left));
+  font-size: 12px;
+}
+.player-desc[hidden] { display: none; }
+.player-desc summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  list-style: none;
+}
+.player-desc summary::-webkit-details-marker { display: none; }
+.player-desc summary::before { content: "▸ "; }
+.player-desc[open] summary::before { content: "▾ "; }
+.player-desc p {
+  margin: 6px 0 2px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .player-frame-wrap {
@@ -652,6 +713,62 @@ img { max-width: 100%; display: block; }
 .form-hint.warn { color: #ff9f0a; }
 .form-hint.error { color: var(--danger); }
 
+/* HTMLコードの直接貼り付け（ファイル添付の代わり）。貼り付けた全文を
+   画面いっぱいに表示し続ける必要はないので、高さを抑えてスクロールにする */
+.paste-html {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+}
+.paste-html summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  list-style: none;
+}
+.paste-html summary::-webkit-details-marker { display: none; }
+.paste-html summary::before { content: "▸ "; }
+.paste-html[open] summary::before { content: "▾ "; }
+.paste-html textarea {
+  width: 100%;
+  min-height: 120px;
+  max-height: 280px;
+  margin-top: 10px;
+  font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+.paste-html .btn { margin-top: 8px; }
+
+/* プレイ画面と同じ「縦画面/PC画面」切り替えを投稿時のプレビューにも用意した */
+.preview-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.preview-mode-tab {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.preview-mode-tab[aria-selected="true"] {
+  background: var(--text);
+  color: var(--bg);
+  border-color: transparent;
+}
+
 /* 縦持ちプレビュー枠（投稿ガイドライン 1-5節） */
 .mobile-preview {
   width: 100%;
@@ -663,6 +780,13 @@ img { max-width: 100%; display: block; }
   border: 6px solid var(--text);
   background: #000;
   position: relative;
+  transition: max-width 0.2s ease, aspect-ratio 0.2s ease;
+}
+.mobile-preview.is-landscape {
+  max-width: 480px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  border-width: 3px;
 }
 .mobile-preview iframe {
   width: 100%;
@@ -774,8 +898,16 @@ footer.site-footer a { margin: 0 8px; }
 
 .mypage-item.is-removed { opacity: 0.5; }
 
-.mypage-thumb {
+.mypage-thumb-wrap {
   flex: none;
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.mypage-thumb {
   width: 72px;
   height: 96px;
   border-radius: var(--radius-sm);
@@ -783,6 +915,25 @@ footer.site-footer a { margin: 0 8px; }
   background: var(--surface-elevated);
 }
 .mypage-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* マイページから作品を再投稿せずにサムネイルだけ差し替えられるボタン */
+.mypage-thumb-edit-btn {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 2px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.mypage-thumb-edit-btn:hover { color: var(--accent); border-color: var(--accent); }
+.mypage-thumb-hint {
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 0;
+  text-align: center;
+}
 
 .mypage-body { flex: 1; min-width: 0; }
 

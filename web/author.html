@@ -28,11 +28,14 @@
       </div>
       <div class="player-actions">
         <button id="player-rotate-btn" class="btn player-action-btn player-rotate-btn" type="button" title="PCでスマホ用ゲームを縦画面で表示">縦画面</button>
-        <button id="player-rate-btn" class="btn player-action-btn" type="button">評価</button>
-        <button id="player-comment-btn" class="btn player-action-btn" type="button">コメント</button>
+        <button id="player-review-btn" class="btn player-action-btn" type="button">レビュー</button>
         <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
       </div>
     </div>
+    <details class="player-desc" id="player-desc" hidden>
+      <summary>作品の説明を読む</summary>
+      <p id="player-desc-text"></p>
+    </details>
     <div class="player-frame-wrap" id="player-frame-wrap"></div>
   </div>
 

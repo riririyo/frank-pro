@@ -4,6 +4,7 @@
 import { supabase } from "./supabaseClient.js";
 import { openPlayer } from "./player.js";
 import { buildCardMenuButton } from "./card-menu.js";
+import { buildWorkDescEl } from "./work-desc.js";
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
 
@@ -19,7 +20,7 @@ export async function initAuthorPage() {
     supabase.from("profiles").select("display_name, bio, sns_links").eq("id", authorId).maybeSingle(),
     supabase
       .from("works")
-      .select("id, title, thumbnail_path, category, access_count, rating_count, rating_avg")
+      .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg")
       .eq("author_id", authorId)
       .eq("status", "published")
       .order("created_at", { ascending: false }),
@@ -74,6 +75,8 @@ export async function initAuthorPage() {
           </div>
         </div>
       `;
+      const descEl = buildWorkDescEl(w.description);
+      if (descEl) card.querySelector(".work-title").insertAdjacentElement("afterend", descEl);
       card.querySelector(".work-meta-row").appendChild(buildCardMenuButton(card, w));
       grid.appendChild(card);
     }

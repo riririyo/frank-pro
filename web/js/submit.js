@@ -7,17 +7,15 @@
 import { CONFIG } from "./config.js";
 import { supabase } from "./supabaseClient.js";
 import { requireAuth } from "./auth.js";
+import {
+  THUMBNAIL_MIME_TO_EXT,
+  MAX_THUMBNAIL_SIZE,
+  MAX_THUMBNAIL_RAW_SIZE,
+  compressThumbnailImage,
+  uploadThumbnail as uploadThumbnailShared,
+} from "./thumbnail.js";
 
 const MAX_SIZE = CONFIG.MAX_FILE_SIZE_BYTES;
-const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB（0004_storage.sqlのthumbnailsバケット上限と一致させる）
-const MAX_THUMBNAIL_RAW_SIZE = 20 * 1024 * 1024; // 圧縮前の元画像に対する上限（スマホの高解像度写真でも通るように余裕を持たせる）
-const THUMBNAIL_MAX_DIMENSION = 1600; // 圧縮後の最大辺（一覧のカードは小さいので十分な解像度）
-const THUMBNAIL_JPEG_QUALITY = 0.82;
-const THUMBNAIL_MIME_TO_EXT = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-};
 
 let selectedFile = null;
 let selectedThumbnailFile = null;
@@ -37,12 +35,48 @@ export async function initSubmitPage() {
   const thumbnailInput = document.getElementById("thumbnail-input");
   const thumbnailPreviewEl = document.getElementById("thumbnail-preview");
   const thumbnailHint = document.getElementById("thumbnail-hint");
+  const pasteDetails = document.querySelector(".paste-html");
+  const pasteTextarea = document.getElementById("html-paste-input");
+  const pasteApplyBtn = document.getElementById("html-paste-apply-btn");
+  const pasteHint = document.getElementById("html-paste-hint");
+  const previewModeTabs = document.getElementById("preview-mode-tabs");
+  const mobilePreview = document.getElementById("mobile-preview");
 
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files[0];
     if (!file) return;
     await handleFileSelected(file, { previewFrame, warningsEl, previewHint });
   });
+
+  // ファイル選択の代わりに、HTMLコードを直接貼り付けても投稿できるようにする。
+  // 貼り付けた全文を画面に表示し続ける必要はないので、適用後はパネルを閉じる
+  pasteApplyBtn.addEventListener("click", async () => {
+    const code = pasteTextarea.value;
+    if (!code.trim()) {
+      pasteHint.textContent = "コードを貼り付けてください。";
+      pasteHint.className = "form-hint error";
+      return;
+    }
+    const file = new File([code], "pasted-work.html", { type: "text/html" });
+    fileInput.value = "";
+    await handleFileSelected(file, { previewFrame, warningsEl, previewHint });
+    if (selectedFile) {
+      pasteHint.textContent = `貼り付けたコード（${code.length}文字）を使用します。`;
+      pasteHint.className = "form-hint";
+      if (pasteDetails) pasteDetails.open = false;
+    }
+  });
+
+  if (previewModeTabs && mobilePreview) {
+    previewModeTabs.addEventListener("click", (e) => {
+      const btn = e.target.closest(".preview-mode-tab");
+      if (!btn) return;
+      previewModeTabs
+        .querySelectorAll(".preview-mode-tab")
+        .forEach((el) => el.setAttribute("aria-selected", el === btn ? "true" : "false"));
+      mobilePreview.classList.toggle("is-landscape", btn.dataset.mode === "landscape");
+    });
+  }
 
   thumbnailInput.addEventListener("change", async () => {
     await handleThumbnailSelected(thumbnailInput.files[0], { thumbnailPreviewEl, thumbnailHint });
@@ -140,49 +174,6 @@ async function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint
   img.style.borderRadius = "10px";
   img.style.marginTop = "8px";
   thumbnailPreviewEl.appendChild(img);
-}
-
-// サムネイル画像をcanvasで縮小・再エンコードして、アップロード容量を抑える。
-// 元画像がすでに小さい場合や、何らかの理由で圧縮に失敗した場合は元のファイルをそのまま返す。
-async function compressThumbnailImage(
-  file,
-  { maxDimension = THUMBNAIL_MAX_DIMENSION, quality = THUMBNAIL_JPEG_QUALITY } = {}
-) {
-  const objectUrl = URL.createObjectURL(file);
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
-      img.src = objectUrl;
-    });
-
-    let { naturalWidth: width, naturalHeight: height } = image;
-    if (!width || !height) return file;
-
-    if (width > maxDimension || height > maxDimension) {
-      const scale = maxDimension / Math.max(width, height);
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(image, 0, 0, width, height);
-
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
-    if (!blob || blob.size >= file.size) return file;
-
-    const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
-    return new File([blob], newName, { type: "image/jpeg" });
-  } catch (e) {
-    console.error("thumbnail compress failed", e);
-    return file;
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
 }
 
 function renderStaticWarnings(sourceText, warningsEl) {
@@ -291,23 +282,7 @@ async function handleSubmit({ submitBtn }) {
 
 async function uploadThumbnail(workId, userId, file) {
   try {
-    const ext = THUMBNAIL_MIME_TO_EXT[file.type];
-    // thumbnails_insert_own_path ポリシー（0004_storage.sql）が
-    // 先頭セグメント=自分のuidのパスにしかアップロードを許可しないため、この形にする
-    const path = `${userId}/${workId}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("thumbnails")
-      .upload(path, file, { contentType: file.type, upsert: true });
-    if (uploadError) throw uploadError;
-
-    const { data: publicUrlData } = supabase.storage.from("thumbnails").getPublicUrl(path);
-
-    const { error: updateError } = await supabase
-      .from("works")
-      .update({ thumbnail_path: publicUrlData.publicUrl, thumbnail_source: "author" })
-      .eq("id", workId);
-    if (updateError) throw updateError;
+    await uploadThumbnailShared(supabase, workId, userId, file);
   } catch (e) {
     // 投稿自体は成功しているので、ここで失敗してもブロックしない。
     // thumbnail_sourceは'pending'のままなので、自動生成バッチが後で拾ってくれる。

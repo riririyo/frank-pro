@@ -16,6 +16,7 @@
     </div>
     <div class="header-actions">
       <button id="random-play-btn" class="btn" title="適当に遊ぶ">🎲 適当に遊ぶ</button>
+      <a class="btn" href="history.html">履歴</a>
       <div id="auth-slot"></div>
     </div>
   </header>
@@ -27,6 +28,7 @@
       frank htmlは、そうやって作った作品をサクッと投稿して、遊んでくれた人からすぐ反応をもらい、
       改善につなげていくための場所です。自分のアイデアが人にどう思ってもらえるか、気軽に試してみませんか？
       投稿するのも遊ぶのも、完全無料です。
+      投稿した作品の権利は投稿者本人に帰属し、frank html（サイト運営者）に譲渡されることはありません。
     </p>
   </details>
 
@@ -50,11 +52,14 @@
       </div>
       <div class="player-actions">
         <button id="player-rotate-btn" class="btn player-action-btn player-rotate-btn" type="button" title="PCでスマホ用ゲームを縦画面で表示">縦画面</button>
-        <button id="player-rate-btn" class="btn player-action-btn" type="button">評価</button>
-        <button id="player-comment-btn" class="btn player-action-btn" type="button">コメント</button>
+        <button id="player-review-btn" class="btn player-action-btn" type="button">レビュー</button>
         <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
       </div>
     </div>
+    <details class="player-desc" id="player-desc" hidden>
+      <summary>作品の説明を読む</summary>
+      <p id="player-desc-text"></p>
+    </details>
     <div class="player-frame-wrap" id="player-frame-wrap">
       <!-- iframeはJSで動的に生成・破棄する（player.js） -->
     </div>

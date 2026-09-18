@@ -7,6 +7,7 @@ import { supabase } from "./supabaseClient.js";
 import { openPlayer } from "./player.js";
 import { getPlayedIds } from "./visitor.js";
 import { buildCardMenuButton } from "./card-menu.js";
+import { buildWorkDescEl } from "./work-desc.js";
 
 const PAGE_SIZE = 24;
 
@@ -85,7 +86,7 @@ async function fetchPage() {
   loading = true;
   const { data, error } = await supabase
     .from("works")
-    .select("id, title, thumbnail_path, category, access_count, rating_count, rating_avg, rating_bayes, created_at")
+    .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, rating_bayes, created_at")
     .eq("status", "published")
     .order(currentSort.column, { ascending: currentSort.ascending })
     .range(currentOffset, currentOffset + PAGE_SIZE - 1);
@@ -144,6 +145,8 @@ function buildCard(work) {
   title.className = "work-title";
   title.textContent = work.title;
 
+  const descEl = buildWorkDescEl(work.description);
+
   const stats = document.createElement("div");
   stats.className = "work-stats";
   const ratingText =
@@ -156,6 +159,7 @@ function buildCard(work) {
   metaRow.appendChild(buildCardMenuButton(card, work));
 
   meta.appendChild(title);
+  if (descEl) meta.appendChild(descEl);
   meta.appendChild(metaRow);
 
   card.appendChild(thumbWrap);

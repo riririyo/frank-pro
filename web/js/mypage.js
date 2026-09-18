@@ -9,6 +9,13 @@
 
 import { supabase } from "./supabaseClient.js";
 import { requireAuth } from "./auth.js";
+import {
+  THUMBNAIL_MIME_TO_EXT,
+  MAX_THUMBNAIL_SIZE,
+  MAX_THUMBNAIL_RAW_SIZE,
+  compressThumbnailImage,
+  uploadThumbnail,
+} from "./thumbnail.js";
 
 const STATUS_LABEL = {
   published: "公開中",
@@ -208,6 +215,9 @@ function buildItem(work, userId) {
   const item = document.createElement("div");
   item.className = "mypage-item" + (work.status === "removed" ? " is-removed" : "");
 
+  const thumbWrap = document.createElement("div");
+  thumbWrap.className = "mypage-thumb-wrap";
+
   const thumb = document.createElement("div");
   thumb.className = "mypage-thumb";
   if (work.thumbnail_path) {
@@ -216,6 +226,36 @@ function buildItem(work, userId) {
     img.loading = "lazy";
     img.alt = work.title;
     thumb.appendChild(img);
+  }
+  thumbWrap.appendChild(thumb);
+
+  // 一覧から自動生成されたサムネイルが気に入らない場合、投稿し直さなくても
+  // ここから差し替えられるようにする（submit.jsと同じ圧縮・アップロード処理を共用）
+  if (work.status !== "removed") {
+    const thumbInput = document.createElement("input");
+    thumbInput.type = "file";
+    thumbInput.accept = "image/png,image/jpeg,image/webp";
+    thumbInput.hidden = true;
+
+    const thumbEditBtn = document.createElement("button");
+    thumbEditBtn.type = "button";
+    thumbEditBtn.className = "mypage-thumb-edit-btn";
+    thumbEditBtn.textContent = "サムネイル変更";
+    thumbEditBtn.addEventListener("click", () => thumbInput.click());
+
+    const thumbHint = document.createElement("p");
+    thumbHint.className = "mypage-thumb-hint form-hint";
+
+    thumbInput.addEventListener("change", async () => {
+      const file = thumbInput.files[0];
+      thumbInput.value = "";
+      if (!file) return;
+      await handleThumbnailChange(file, { thumb, thumbHint, work, userId });
+    });
+
+    thumbWrap.appendChild(thumbEditBtn);
+    thumbWrap.appendChild(thumbInput);
+    thumbWrap.appendChild(thumbHint);
   }
 
   const body = document.createElement("div");
@@ -275,9 +315,52 @@ function buildItem(work, userId) {
     body.appendChild(actions);
   }
 
-  item.appendChild(thumb);
+  item.appendChild(thumbWrap);
   item.appendChild(body);
   return item;
+}
+
+async function handleThumbnailChange(file, { thumb, thumbHint, work, userId }) {
+  if (!THUMBNAIL_MIME_TO_EXT[file.type]) {
+    thumbHint.textContent = "PNG・JPEG・WebPのいずれかを選んでください。";
+    thumbHint.className = "mypage-thumb-hint form-hint error";
+    return;
+  }
+  if (file.size > MAX_THUMBNAIL_RAW_SIZE) {
+    thumbHint.textContent = `画像が大きすぎます（${(file.size / 1024 / 1024).toFixed(2)}MB）。`;
+    thumbHint.className = "mypage-thumb-hint form-hint error";
+    return;
+  }
+
+  thumbHint.textContent = "アップロード中…";
+  thumbHint.className = "mypage-thumb-hint form-hint";
+
+  try {
+    const compressed = await compressThumbnailImage(file);
+    if (compressed.size > MAX_THUMBNAIL_SIZE) {
+      thumbHint.textContent = `圧縮しても上限（2MB）を超えています（${(compressed.size / 1024 / 1024).toFixed(2)}MB）。`;
+      thumbHint.className = "mypage-thumb-hint form-hint error";
+      return;
+    }
+
+    const publicUrl = await uploadThumbnail(supabase, work.id, userId, compressed);
+    work.thumbnail_path = publicUrl;
+
+    thumb.innerHTML = "";
+    const img = document.createElement("img");
+    // 同じパスに上書きアップロードしているので、表示だけキャッシュを避ける
+    img.src = `${publicUrl}?t=${Date.now()}`;
+    img.loading = "lazy";
+    img.alt = work.title;
+    thumb.appendChild(img);
+
+    thumbHint.textContent = "サムネイルを変更しました。";
+    thumbHint.className = "mypage-thumb-hint form-hint";
+  } catch (e) {
+    console.error("thumbnail change failed", e);
+    thumbHint.textContent = "アップロードに失敗しました。時間をおいて再度お試しください。";
+    thumbHint.className = "mypage-thumb-hint form-hint error";
+  }
 }
 
 async function updateStatus(workId, status, userId) {

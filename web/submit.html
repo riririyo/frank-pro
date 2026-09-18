@@ -43,7 +43,13 @@
 
       <div class="form-field">
         <label for="file-input">作品ファイル（HTML 1ファイル・5MB以下）</label>
-        <input id="file-input" type="file" accept=".html,text/html" required />
+        <input id="file-input" type="file" accept=".html,text/html" />
+        <details class="paste-html">
+          <summary>またはHTMLコードを直接貼り付ける</summary>
+          <textarea id="html-paste-input" rows="6" placeholder="ここにHTMLコードを貼り付けてください"></textarea>
+          <button type="button" id="html-paste-apply-btn" class="btn">このコードを使う</button>
+          <p id="html-paste-hint" class="form-hint"></p>
+        </details>
         <div id="upload-warnings"></div>
       </div>
 
@@ -57,8 +63,12 @@
       </div>
 
       <div class="form-field">
-        <label>縦持ちプレビュー（スマホと同じ条件で確認してください）</label>
-        <div class="mobile-preview">
+        <label>プレビュー（投稿前に必ず動作を確認してください）</label>
+        <div class="preview-mode-tabs" id="preview-mode-tabs">
+          <button type="button" class="preview-mode-tab" data-mode="portrait" aria-selected="true">縦画面（スマホ）</button>
+          <button type="button" class="preview-mode-tab" data-mode="landscape" aria-selected="false">PC画面</button>
+        </div>
+        <div class="mobile-preview" id="mobile-preview">
           <iframe id="mobile-preview-frame" sandbox="allow-scripts allow-pointer-lock"></iframe>
         </div>
         <p id="preview-hint" class="form-hint">まずファイルを選択してください。</p>
@@ -70,7 +80,6 @@
           <label><input type="checkbox" /> HTML 1ファイルにまとまっている</label>
           <label><input type="checkbox" /> 外部URLの読み込みがない（画像・フォント・音・ライブラリすべて）</label>
           <label><input type="checkbox" /> localStorage / Cookie を使っていない（または try-catch で囲んである）</label>
-          <label><input type="checkbox" /> 縦長プレビューで最後まで遊べた</label>
           <label><input type="checkbox" /> タップとスワイプだけで操作できる（できない場合は説明文に明記した）</label>
           <label><input type="checkbox" /> 使った素材のライセンスを確認した。権利者のあるキャラクター・ロゴ・音源が入っていない</label>
         </div>

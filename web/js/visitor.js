@@ -32,24 +32,65 @@ export function getVisitorId() {
   }
 }
 
-// 既プレイの作品マーク（docs/frank-pro-handoff.md 5章）
-const PLAYED_KEY = "frankpro_played_ids";
+// 遊んだ作品の履歴（history.htmlの「遊んだ履歴」機能で使う）。
+// [{ id, playedAt }] を新しい順（先頭が最新）で保持する。
+// 旧バージョンではID配列だけを保存していたので、そちらもフォールバックとして読む。
+const PLAYED_KEY = "frankpro_played_ids"; // 旧形式（IDだけの配列）。互換のため書き込みも続ける
+const HISTORY_KEY = "frankpro_play_history"; // 新形式（日時つき、新しい順）
+const HISTORY_LIMIT = 200;
 
-export function getPlayedIds() {
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((e) => e && typeof e.id === "string");
+      }
+    }
+  } catch {
+    /* noop */
+  }
+  // 新形式のデータがなければ、旧形式（IDだけ）から日時なしで読み込む
   try {
     const raw = localStorage.getItem(PLAYED_KEY);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
+    const ids = raw ? JSON.parse(raw) : null;
+    if (Array.isArray(ids)) {
+      return ids.map((id) => ({ id, playedAt: null }));
+    }
   } catch {
-    return new Set();
+    /* noop */
   }
+  return [];
+}
+
+// 「プレイ済み」バッジ表示用。一覧カードでの既プレイ判定にだけ使う
+export function getPlayedIds() {
+  return new Set(loadHistory().map((e) => e.id));
+}
+
+// 履歴ページ用。新しい順の配列 [{ id, playedAt }]
+export function getPlayHistory() {
+  return loadHistory();
 }
 
 export function markPlayed(workId) {
   try {
-    const ids = getPlayedIds();
-    ids.add(workId);
-    localStorage.setItem(PLAYED_KEY, JSON.stringify([...ids]));
+    const history = loadHistory().filter((e) => e.id !== workId);
+    history.unshift({ id: workId, playedAt: new Date().toISOString() });
+    const trimmed = history.slice(0, HISTORY_LIMIT);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+    localStorage.setItem(PLAYED_KEY, JSON.stringify(trimmed.map((e) => e.id)));
   } catch {
     // 保存できなくても致命的ではないので無視する
+  }
+}
+
+export function clearPlayHistory() {
+  try {
+    localStorage.removeItem(HISTORY_KEY);
+    localStorage.removeItem(PLAYED_KEY);
+  } catch {
+    /* noop */
   }
 }

@@ -1,7 +1,7 @@
 // frank pro — 作品カードの「⋮」メニュー
 //
-// 評価・コメントは常時表示だとプレイ画面を圧迫するので、
-// 一覧・作者ページのカードから「⋮」→「評価する」で開く方式にした（rate-modal.js）。
+// レビュー（評価・コメント）は常時表示だとプレイ画面を圧迫するので、
+// 一覧・作者ページのカードから「⋮」→「レビューする」で開く方式にした（rate-modal.js）。
 // 一覧ページ（listing.js）・作者ページ（author.js）の両方から共通で使う。
 
 import { openRateModal } from "./rate-modal.js";
@@ -40,7 +40,7 @@ export function buildCardMenuButton(card, work) {
 
     const rateBtn = document.createElement("button");
     rateBtn.type = "button";
-    rateBtn.textContent = "評価する";
+    rateBtn.textContent = "レビューする";
     rateBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
       closeOpenMenu();
