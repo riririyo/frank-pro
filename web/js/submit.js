@@ -14,6 +14,7 @@ import {
   compressThumbnailImage,
   uploadThumbnail as uploadThumbnailShared,
 } from "./thumbnail.js";
+import { cropThumbnailImage } from "./thumbnail-crop.js";
 
 const MAX_SIZE = CONFIG.MAX_FILE_SIZE_BYTES;
 
@@ -79,7 +80,10 @@ export async function initSubmitPage() {
   }
 
   thumbnailInput.addEventListener("change", async () => {
-    await handleThumbnailSelected(thumbnailInput.files[0], { thumbnailPreviewEl, thumbnailHint });
+    const file = thumbnailInput.files[0];
+    thumbnailInput.value = "";
+    if (!file) return;
+    await handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint });
   });
 
   previewFrame.addEventListener("load", () => {
@@ -142,11 +146,14 @@ async function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint
     return;
   }
 
-  const originalSize = file.size;
+  const cropped = await cropThumbnailImage(file);
+  if (!cropped) return; // ユーザーがキャンセル
+
+  const originalSize = cropped.size;
   thumbnailHint.textContent = "画像を圧縮しています…";
   thumbnailHint.className = "form-hint";
 
-  const compressed = await compressThumbnailImage(file);
+  const compressed = await compressThumbnailImage(cropped);
 
   if (compressed.size > MAX_THUMBNAIL_SIZE) {
     thumbnailHint.textContent = `圧縮しても上限（2MB）を超えています（${(compressed.size / 1024 / 1024).toFixed(2)}MB）。別の画像を選んでください。`;
@@ -168,8 +175,8 @@ async function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint
   thumbnailPreviewUrl = URL.createObjectURL(compressed);
   const img = document.createElement("img");
   img.src = thumbnailPreviewUrl;
-  img.style.width = "96px";
-  img.style.height = "128px";
+  img.style.width = "160px";
+  img.style.height = "120px";
   img.style.objectFit = "cover";
   img.style.borderRadius = "10px";
   img.style.marginTop = "8px";

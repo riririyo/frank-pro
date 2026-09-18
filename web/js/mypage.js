@@ -16,6 +16,7 @@ import {
   compressThumbnailImage,
   uploadThumbnail,
 } from "./thumbnail.js";
+import { cropThumbnailImage } from "./thumbnail-crop.js";
 
 const STATUS_LABEL = {
   published: "公開中",
@@ -332,11 +333,14 @@ async function handleThumbnailChange(file, { thumb, thumbHint, work, userId }) {
     return;
   }
 
+  const cropped = await cropThumbnailImage(file);
+  if (!cropped) return; // ユーザーがキャンセル
+
   thumbHint.textContent = "アップロード中…";
   thumbHint.className = "mypage-thumb-hint form-hint";
 
   try {
-    const compressed = await compressThumbnailImage(file);
+    const compressed = await compressThumbnailImage(cropped);
     if (compressed.size > MAX_THUMBNAIL_SIZE) {
       thumbHint.textContent = `圧縮しても上限（2MB）を超えています（${(compressed.size / 1024 / 1024).toFixed(2)}MB）。`;
       thumbHint.className = "mypage-thumb-hint form-hint error";

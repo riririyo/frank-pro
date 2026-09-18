@@ -966,3 +966,77 @@ footer.site-footer a { margin: 0 8px; }
   flex-wrap: wrap;
 }
 .mypage-actions .btn { padding: 6px 12px; font-size: 12px; }
+
+/* ============ サムネイル切り出し（クロップ）モーダル ============ */
+/* 投稿時・マイページのサムネイル差し替え、両方から呼ばれる共通UI（thumbnail-crop.js） */
+
+.thumb-crop-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.thumb-crop-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.thumb-crop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.thumb-crop-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: #000;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.thumb-crop-frame:active { cursor: grabbing; }
+
+.thumb-crop-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.thumb-crop-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.thumb-crop-zoom-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.thumb-crop-zoom { flex: 1; }
+
+.thumb-crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
