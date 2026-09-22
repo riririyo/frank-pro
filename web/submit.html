@@ -42,7 +42,17 @@
       </div>
 
       <div class="form-field">
-        <label for="file-input">作品ファイル（HTML 1ファイル・5MB以下）</label>
+        <label>タグ（任意・最大6個）</label>
+        <div class="tag-select-group">
+          <p class="form-hint">操作環境</p>
+          <div id="tag-select-operation" class="tag-select"></div>
+          <p class="form-hint">内容</p>
+          <div id="tag-select-content" class="tag-select"></div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="file-input">作品ファイル（HTML 1ファイル・10MB以下）</label>
         <input id="file-input" type="file" accept=".html,text/html" />
         <details class="paste-html">
           <summary>またはHTMLコードを直接貼り付ける</summary>

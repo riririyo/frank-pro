@@ -15,6 +15,7 @@ import {
   uploadThumbnail as uploadThumbnailShared,
 } from "./thumbnail.js";
 import { cropThumbnailImage } from "./thumbnail-crop.js";
+import { OPERATION_TAGS, CONTENT_TAGS } from "./tags.js";
 
 const MAX_SIZE = CONFIG.MAX_FILE_SIZE_BYTES;
 
@@ -42,6 +43,8 @@ export async function initSubmitPage() {
   const pasteHint = document.getElementById("html-paste-hint");
   const previewModeTabs = document.getElementById("preview-mode-tabs");
   const mobilePreview = document.getElementById("mobile-preview");
+
+  renderTagCheckboxes();
 
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files[0];
@@ -99,6 +102,30 @@ export async function initSubmitPage() {
   });
 }
 
+function renderTagCheckboxes() {
+  const opEl = document.getElementById("tag-select-operation");
+  const contentEl = document.getElementById("tag-select-content");
+  if (!opEl || !contentEl) return;
+
+  for (const tag of OPERATION_TAGS) {
+    const label = document.createElement("label");
+    label.className = "tag-option";
+    const checked = tag.value === "touch" ? " checked" : "";
+    label.innerHTML = `<input type="checkbox" name="tags" value="${tag.value}"${checked} /> ${escapeHtml(tag.label)}`;
+    opEl.appendChild(label);
+  }
+  for (const tag of CONTENT_TAGS) {
+    const label = document.createElement("label");
+    label.className = "tag-option";
+    label.innerHTML = `<input type="checkbox" name="tags" value="${tag.value}" /> ${escapeHtml(tag.label)}`;
+    contentEl.appendChild(label);
+  }
+}
+
+function getSelectedTags() {
+  return [...document.querySelectorAll('input[name="tags"]:checked')].map((el) => el.value).slice(0, 6);
+}
+
 async function handleFileSelected(file, { previewFrame, warningsEl, previewHint }) {
   warningsEl.innerHTML = "";
   hasPreviewedOnce = false;
@@ -109,7 +136,7 @@ async function handleFileSelected(file, { previewFrame, warningsEl, previewHint 
     return;
   }
   if (file.size > MAX_SIZE) {
-    warningsEl.innerHTML = `<p class='form-hint error'>ファイルサイズが上限（5MB）を超えています（${(file.size / 1024 / 1024).toFixed(2)}MB）。</p>`;
+    warningsEl.innerHTML = `<p class='form-hint error'>ファイルサイズが上限（10MB）を超えています（${(file.size / 1024 / 1024).toFixed(2)}MB）。</p>`;
     selectedFile = null;
     return;
   }
@@ -217,6 +244,7 @@ async function handleSubmit({ submitBtn }) {
   const description = document.getElementById("description-input").value.trim();
   const genreInput = document.querySelector('input[name="genre"]:checked');
   const category = genreInput ? genreInput.value : "game";
+  const tags = getSelectedTags();
   const checklistBoxes = [...document.querySelectorAll(".checklist input[type=checkbox]")];
 
   if (!selectedFile) {
@@ -256,6 +284,7 @@ async function handleSubmit({ submitBtn }) {
         title,
         description,
         category,
+        tags,
         file_size_bytes: selectedFile.size,
       }),
     });

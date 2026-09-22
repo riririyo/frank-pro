@@ -20,5 +20,5 @@ export const CONFIG = {
     TRIGGER_THUMBNAIL_URL: "https://tvaadeaojsolxsmmyznz.supabase.co/functions/v1/trigger-thumbnail",
     ADMIN_ACTION_URL: "https://tvaadeaojsolxsmmyznz.supabase.co/functions/v1/admin-action",
 
-    MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024, // 5MB
+    MAX_FILE_SIZE_BYTES: 10 * 1024 * 1024, // 10MB
 };

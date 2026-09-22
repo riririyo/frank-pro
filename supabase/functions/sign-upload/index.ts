@@ -20,8 +20,30 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const WORKS_BUCKET = "works";
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB（docs/security-design.md, posting-guideline-draft.md）
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB（docs/security-design.md, posting-guideline-draft.md）
 const VALID_CATEGORIES = ["game", "product"];
+
+// web/js/tags.js の ALL_TAG_VALUES と同じ内容（Denoはweb/js/*をimportできないため複製）。
+// 追加・削除した場合は両方直すこと。
+const VALID_TAGS = [
+  "touch",
+  "keyboard_required",
+  "mouse_required",
+  "controller",
+  "pc_only",
+  "sound",
+  "rpg",
+  "puzzle",
+  "action",
+  "shooting",
+  "rhythm",
+  "casual",
+  "simulation",
+  "tool",
+  "prototype",
+  "joke",
+];
+const MAX_TAGS = 6;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*", // 本番では frank pro の実ドメインに絞る
@@ -63,7 +85,13 @@ Deno.serve(async (req) => {
     return json({ error: "このアカウントは投稿を停止されています" }, 403);
   }
 
-  let body: { title?: string; description?: string; category?: string; file_size_bytes?: number };
+  let body: {
+    title?: string;
+    description?: string;
+    category?: string;
+    file_size_bytes?: number;
+    tags?: string[];
+  };
   try {
     body = await req.json();
   } catch {
@@ -74,6 +102,9 @@ Deno.serve(async (req) => {
   const description = (body.description ?? "").trim().slice(0, 2000);
   const category = VALID_CATEGORIES.includes(body.category ?? "") ? body.category! : "game";
   const fileSize = Number(body.file_size_bytes ?? 0);
+  const tags = Array.isArray(body.tags)
+    ? [...new Set(body.tags.filter((t) => VALID_TAGS.includes(t)))].slice(0, MAX_TAGS)
+    : [];
 
   if (!title) {
     return json({ error: "title is required" }, 400);
@@ -82,7 +113,7 @@ Deno.serve(async (req) => {
     return json({ error: "file_size_bytes is required" }, 400);
   }
   if (fileSize > MAX_SIZE_BYTES) {
-    return json({ error: `file too large: max ${MAX_SIZE_BYTES} bytes (5MB)` }, 413);
+    return json({ error: `file too large: max ${MAX_SIZE_BYTES} bytes (10MB)` }, 413);
   }
 
   // work_id はここで先に採番してから、それをファイル名に使う（連番にしない。docs/security-design.md 4章）。
@@ -95,6 +126,7 @@ Deno.serve(async (req) => {
     title,
     description,
     category,
+    tags,
     file_path: objectPath,
     file_size_bytes: fileSize,
     status: "published",

@@ -10,6 +10,7 @@ import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
 import { fetchDisplayNames, buildWorkThumbAuthorLink } from "./author-link.js";
 import { fetchCommentCounts } from "./comment-count.js";
+import { OPERATION_TAGS, CONTENT_TAGS } from "./tags.js";
 
 const PAGE_SIZE = 24;
 
@@ -36,6 +37,7 @@ let currentGenre = GENRE_FILTERS[0];
 let currentOffset = 0;
 let loading = false;
 let reachedEnd = false;
+const currentTags = new Set();
 
 export function initListing() {
   const tabsEl = document.getElementById("sort-tabs");
@@ -62,6 +64,8 @@ export function initListing() {
     }
   }
 
+  renderTagFilters();
+
   window.addEventListener("scroll", () => {
     if (loading || reachedEnd) return;
     const nearBottom =
@@ -79,6 +83,49 @@ function switchSort(opt) {
   document
     .querySelectorAll(".sort-tab")
     .forEach((el) => el.setAttribute("aria-selected", el.textContent === opt.label ? "true" : "false"));
+  loadInitial();
+}
+
+function renderTagFilters() {
+  const groupEl = document.getElementById("tag-filter-group");
+  if (!groupEl) return;
+  groupEl.innerHTML = "";
+
+  const buildRow = (label, tags) => {
+    const row = document.createElement("div");
+    row.className = "tag-filter-row";
+    const labelEl = document.createElement("span");
+    labelEl.className = "tag-filter-label";
+    labelEl.textContent = label;
+    row.appendChild(labelEl);
+    const tabsEl = document.createElement("div");
+    tabsEl.className = "tag-filter-tabs";
+    for (const tag of tags) {
+      const btn = document.createElement("button");
+      btn.className = "tag-filter-tab";
+      btn.textContent = tag.label;
+      btn.setAttribute("aria-pressed", "false");
+      btn.addEventListener("click", () => toggleTagFilter(tag.value, btn));
+      tabsEl.appendChild(btn);
+    }
+    row.appendChild(tabsEl);
+    return row;
+  };
+
+  groupEl.appendChild(buildRow("操作環境", OPERATION_TAGS));
+  groupEl.appendChild(buildRow("内容", CONTENT_TAGS));
+}
+
+function toggleTagFilter(value, btn) {
+  if (currentTags.has(value)) {
+    currentTags.delete(value);
+    btn.setAttribute("aria-pressed", "false");
+  } else {
+    currentTags.add(value);
+    btn.setAttribute("aria-pressed", "true");
+  }
+  currentOffset = 0;
+  reachedEnd = false;
   loadInitial();
 }
 
@@ -136,6 +183,9 @@ async function fetchPage() {
 
   if (currentGenre.key !== "all") {
     query = query.eq("category", currentGenre.key);
+  }
+  if (currentTags.size > 0) {
+    query = query.contains("tags", [...currentTags]);
   }
 
   const { data, error } = await query

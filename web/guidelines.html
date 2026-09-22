@@ -48,7 +48,7 @@
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">// ✅✅ 推奨：メモリ上の変数で持つ</span></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> highScore <span class="op">=</span> <span class="dv">0</span></span></code></pre></div>
 <p>セーブ機能・ハイスコア保存は現在サポートしていません。 リロードで状態が消える前提で設計してください。</p>
-<h3 id="ファイルサイズ上限5mb">1-4. ファイルサイズ上限：5MB</h3>
+<h3 id="ファイルサイズ上限5mb">1-4. ファイルサイズ上限：10MB</h3>
 <p>画像を data URI にすると容量が跳ねます。超える場合は、 解像度を落とす、色数を減らす、PNGをJPEGやWebPに変えるなどで調整してください。</p>
 <h3 id="スマホの縦持ちで遊べること">1-5. 縦長・タッチ操作で遊べること</h3>
 <p><strong>作品はPCで見る場合も、実機のスマホと同じ縦長の枠の中に表示されます</strong>（PCでは「縦画面」ボタンでこの表示に切り替えられます）。 見ている人がPCかスマホかにかかわらず、操作はタップ・スワイプなど<strong>タッチ操作を基本</strong>に設計してください。</p>
@@ -131,7 +131,7 @@
 </tr>
 <tr class="even">
 <td>ファイルサイズ</td>
-<td>5MB以下</td>
+<td>10MB以下</td>
 </tr>
 <tr class="odd">
 <td>外部リソース参照</td>
@@ -170,7 +170,7 @@
 <pre><code>□ HTML 1ファイルにまとまっている
 □ 外部URLの読み込みがない（画像・フォント・音・ライブラリすべて）
 □ localStorage / Cookie を使っていない（または try-catch で囲んである）
-□ 5MB以下
+□ 10MB以下
 □ 縦長プレビューで最後まで遊べた
 □ タップとスワイプだけで操作できる（できない場合は説明文に明記した）
 □ 使った素材のライセンスを確認した
