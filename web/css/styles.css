@@ -40,6 +40,34 @@
   }
 }
 
+/* 手動テーマ切り替え（theme.js）。<html data-theme="dark|light">を明示的に付けて、
+   OS設定（上のprefers-color-scheme）より優先させる。属性セレクタなので
+   plainな:rootより詳細度が高く、順序に関係なく上書きできる */
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-elevated: #2c2c2e;
+  --text: #f5f5f7;
+  --text-secondary: #98989d;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #0a84ff;
+  --star-empty: #48484a;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+:root[data-theme="light"] {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --border: rgba(0, 0, 0, 0.08);
+  --accent: #0071e3;
+  --star-empty: #d2d2d7;
+  --overlay: rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
 * { box-sizing: border-box; }
 html, body {
   margin: 0;
@@ -63,6 +91,11 @@ img { max-width: 100%; display: block; }
 }
 
 /* ============ ヘッダー ============ */
+
+/* ============ テーマ切り替えボタン（theme.js。全ページ共通ヘッダーに差し込む） ============ */
+.theme-toggle-btn {
+  font-size: 15px;
+}
 
 .app-header {
   position: sticky;
@@ -231,6 +264,34 @@ img { max-width: 100%; display: block; }
 .sort-tab[aria-selected="true"] {
   background: var(--text);
   color: var(--bg);
+  border-color: transparent;
+}
+
+/* ============ ジャンル絞り込みタブ ============ */
+/* 見た目は並べ替えタブ(.sort-tab)を踏襲しつつ、別グループだと分かるよう間隔を空ける */
+.genre-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 max(16px, env(safe-area-inset-left)) 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.genre-tabs::-webkit-scrollbar { display: none; }
+.genre-tab {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.genre-tab[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-contrast);
   border-color: transparent;
 }
 
@@ -658,6 +719,53 @@ img { max-width: 100%; display: block; }
   .player-side { display: none; }
 }
 
+/* PC画面モード: 縦画面モードと同じ発想で、今度は16:9のPC画面枠を作る。
+   横長すぎるゲームがウィンドウ全幅に間延びして表示されるのを防ぐ。
+   サイズはplayer.js側でJS計算（縦画面モードと同じ理由）。
+   こちらは左右パネルは出さない（枠自体が既にPC画面サイズに近いため） */
+.player-overlay.force-landscape .player-body {
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  background: radial-gradient(circle at 50% 20%, #2c2c2e, #000 75%);
+  overflow: hidden;
+}
+.player-overlay.force-landscape .player-frame-wrap {
+  flex: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--border), 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+.player-overlay.force-landscape .player-frame-wrap iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 全画面表示モード（上部バー・説明パネルを消して画面いっぱいに表示）。
+   閉じる/設定変更の導線として、右上に小さな半透明の「戻す」ボタンを重ねて出す */
+.player-overlay.hide-topbar .player-topbar,
+.player-overlay.hide-topbar .player-desc {
+  display: none;
+}
+.player-fs-exit-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  opacity: 0.55;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+}
+.player-fs-exit-btn:hover { opacity: 0.9; }
+
+/* PC画面モードボタンも縦画面ボタンと同じ理由で、狭い画面（＝もともとスマホ）では隠す */
+@media (max-width: 700px) {
+  .player-landscape-btn { display: none; }
+}
+
 /* ============ 評価・コメントモーダル ============ */
 /* プレイ画面とは独立。一覧・作者ページのカードの「⋮」→「評価する」から開く（rate-modal.js） */
 
@@ -694,6 +802,7 @@ img { max-width: 100%; display: block; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 14px max(16px, env(safe-area-inset-left));
   border-bottom: 1px solid var(--border);
 }
@@ -703,6 +812,15 @@ img { max-width: 100%; display: block; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.rate-modal-header-actions,
+.thumb-crop-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 .rate-modal-body {
   padding: 16px max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-bottom));
@@ -1100,8 +1218,16 @@ footer.site-footer a { margin: 0 8px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   font-size: 15px;
   font-weight: 600;
+}
+.thumb-crop-header > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .thumb-crop-frame {

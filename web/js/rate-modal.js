@@ -7,6 +7,7 @@
 
 import { renderRatingWidget } from "./rating.js";
 import { renderComments } from "./comments.js";
+import { buildShareButton } from "./share.js";
 
 export function initRateModal() {
   const overlay = document.getElementById("rate-modal-overlay");
@@ -31,6 +32,15 @@ export function openRateModal(workId, title, { mode = "both" } = {}) {
   document.getElementById("rate-modal-title").textContent = title ?? "";
   overlay.hidden = false;
   document.body.style.overflow = "hidden";
+
+  // 呼び出しのたびに古い共有ボタンだけ差し替える（閉じるボタンは残す）
+  const headerActionsEl = overlay.querySelector(".rate-modal-header-actions");
+  if (headerActionsEl) {
+    headerActionsEl.querySelector(".rate-modal-share-btn")?.remove();
+    const shareBtn = buildShareButton(workId, title);
+    shareBtn.classList.add("rate-modal-share-btn");
+    headerActionsEl.insertBefore(shareBtn, headerActionsEl.firstChild);
+  }
 
   const ratingEl = document.getElementById("rate-modal-rating");
   const commentsEl = document.getElementById("rate-modal-comments");

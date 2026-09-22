@@ -6,6 +6,7 @@ import { openPlayer } from "./player.js";
 import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
 import { buildWorkThumbAuthorLink } from "./author-link.js";
+import { fetchCommentCounts } from "./comment-count.js";
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
 
@@ -67,8 +68,9 @@ export async function initAuthorPage() {
   } else if (!works.length) {
     grid.innerHTML = "<div class='empty-state'>まだ投稿がありません。</div>";
   } else {
+    const commentCounts = await fetchCommentCounts(works.map((w) => w.id));
     for (const w of works) {
-      grid.appendChild(buildWorkCard(w, profile?.display_name));
+      grid.appendChild(buildWorkCard(w, profile?.display_name, commentCounts));
     }
   }
   root.appendChild(grid);
@@ -78,7 +80,7 @@ export async function initAuthorPage() {
 // 1件ずつ問い合わせる必要はなく、既に取得済みのdisplay_nameをそのまま使う。
 // 以前はここで<div class="work-thumb"></div>を空のまま作っていたため
 // サムネイル画像が一切表示されないバグがあった（thumbnail_pathは取得済みなのに使っていなかった）
-function buildWorkCard(work, displayName) {
+function buildWorkCard(work, displayName, commentCounts) {
   const card = document.createElement("div");
   card.className = "work-card";
   card.addEventListener("click", () => openPlayer(work.id));
@@ -124,8 +126,9 @@ function buildWorkCard(work, displayName) {
 
   const stats = document.createElement("div");
   stats.className = "work-stats";
-  stats.textContent =
-    work.rating_count > 0 ? `★ ${work.rating_avg.toFixed(1)} · ${work.access_count}回` : `評価なし · ${work.access_count}回`;
+  const commentCount = commentCounts?.get(work.id) ?? 0;
+  const ratingLabel = work.rating_count > 0 ? `★ ${work.rating_avg.toFixed(1)}` : "評価なし";
+  stats.textContent = `${ratingLabel}（💬 ${commentCount}）· ${work.access_count}回`;
 
   const metaRow = document.createElement("div");
   metaRow.className = "work-meta-row";

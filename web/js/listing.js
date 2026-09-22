@@ -9,10 +9,18 @@ import { getPlayedIds } from "./visitor.js";
 import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
 import { fetchDisplayNames, buildWorkThumbAuthorLink } from "./author-link.js";
+import { fetchCommentCounts } from "./comment-count.js";
 
 const PAGE_SIZE = 24;
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
+
+// ジャンル絞り込み。「すべて」はcategoryで絞らない特別扱い
+const GENRE_FILTERS = [
+  { key: "all", label: "すべて" },
+  { key: "game", label: "ゲーム" },
+  { key: "product", label: "プロダクト" },
+];
 
 // 初期表示は「アクセス数」順（新規順だと0本〜数本の時期に荒れやすいため）。
 // 並び順自体は引き続き4種から選べる
@@ -24,6 +32,7 @@ const SORT_OPTIONS = [
 ];
 
 let currentSort = SORT_OPTIONS[0];
+let currentGenre = GENRE_FILTERS[0];
 let currentOffset = 0;
 let loading = false;
 let reachedEnd = false;
@@ -38,6 +47,19 @@ export function initListing() {
     btn.setAttribute("aria-selected", opt.key === currentSort.key ? "true" : "false");
     btn.addEventListener("click", () => switchSort(opt));
     tabsEl.appendChild(btn);
+  }
+
+  const genreTabsEl = document.getElementById("genre-tabs");
+  if (genreTabsEl) {
+    genreTabsEl.innerHTML = "";
+    for (const opt of GENRE_FILTERS) {
+      const btn = document.createElement("button");
+      btn.className = "genre-tab";
+      btn.textContent = opt.label;
+      btn.setAttribute("aria-selected", opt.key === currentGenre.key ? "true" : "false");
+      btn.addEventListener("click", () => switchGenre(opt));
+      genreTabsEl.appendChild(btn);
+    }
   }
 
   window.addEventListener("scroll", () => {
@@ -60,6 +82,16 @@ function switchSort(opt) {
   loadInitial();
 }
 
+function switchGenre(opt) {
+  currentGenre = opt;
+  currentOffset = 0;
+  reachedEnd = false;
+  document
+    .querySelectorAll(".genre-tab")
+    .forEach((el) => el.setAttribute("aria-selected", el.textContent === opt.label ? "true" : "false"));
+  loadInitial();
+}
+
 async function loadInitial() {
   const grid = document.getElementById("work-grid");
   grid.innerHTML = "<div class='loading-state'>読み込み中…</div>";
@@ -71,8 +103,11 @@ async function loadInitial() {
     grid.innerHTML = "<div class='empty-state'>まだ作品がありません。最初の投稿者になりませんか？</div>";
     return;
   }
-  const names = await fetchDisplayNames(works.map((w) => w.author_id));
-  for (const w of works) grid.appendChild(buildCard(w, names));
+  const [names, commentCounts] = await Promise.all([
+    fetchDisplayNames(works.map((w) => w.author_id)),
+    fetchCommentCounts(works.map((w) => w.id)),
+  ]);
+  for (const w of works) grid.appendChild(buildCard(w, names, commentCounts));
   currentOffset = works.length;
 }
 
@@ -80,8 +115,11 @@ async function loadMore() {
   loading = true;
   const works = await fetchPage();
   const grid = document.getElementById("work-grid");
-  const names = await fetchDisplayNames(works.map((w) => w.author_id));
-  for (const w of works) grid.appendChild(buildCard(w, names));
+  const [names, commentCounts] = await Promise.all([
+    fetchDisplayNames(works.map((w) => w.author_id)),
+    fetchCommentCounts(works.map((w) => w.id)),
+  ]);
+  for (const w of works) grid.appendChild(buildCard(w, names, commentCounts));
   currentOffset += works.length;
   if (works.length < PAGE_SIZE) reachedEnd = true;
   loading = false;
@@ -89,12 +127,18 @@ async function loadMore() {
 
 async function fetchPage() {
   loading = true;
-  const { data, error } = await supabase
+  let query = supabase
     .from("works")
     .select(
       "id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, rating_bayes, created_at, author_id"
     )
-    .eq("status", "published")
+    .eq("status", "published");
+
+  if (currentGenre.key !== "all") {
+    query = query.eq("category", currentGenre.key);
+  }
+
+  const { data, error } = await query
     .order(currentSort.column, { ascending: currentSort.ascending })
     .range(currentOffset, currentOffset + PAGE_SIZE - 1);
 
@@ -106,7 +150,7 @@ async function fetchPage() {
   return data ?? [];
 }
 
-function buildCard(work, authorNames) {
+function buildCard(work, authorNames, commentCounts) {
   const played = getPlayedIds();
 
   const card = document.createElement("div");
@@ -162,7 +206,8 @@ function buildCard(work, authorNames) {
   stats.className = "work-stats";
   const ratingText =
     work.rating_count > 0 ? `<span class="stars">★</span> ${work.rating_avg.toFixed(1)}` : "評価なし";
-  stats.innerHTML = `${ratingText} · ${work.access_count}回`;
+  const commentCount = commentCounts?.get(work.id) ?? 0;
+  stats.innerHTML = `${ratingText}（💬 ${commentCount}）· ${work.access_count}回`;
 
   const metaRow = document.createElement("div");
   metaRow.className = "work-meta-row";

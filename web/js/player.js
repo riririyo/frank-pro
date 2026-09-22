@@ -18,20 +18,55 @@ export function initPlayer() {
   const closeBtn = document.getElementById("player-close");
   const reviewBtn = document.getElementById("player-review-btn");
   const rotateBtn = document.getElementById("player-rotate-btn");
+  const landscapeBtn = document.getElementById("player-landscape-btn");
+  const fullscreenBtn = document.getElementById("player-fullscreen-btn");
 
   closeBtn.addEventListener("click", closePlayer);
+
   // PCでスマホ向けゲームを遊ぶと横に間延びして見えるので、縦長の枠に収めるモード。
   // 作品側のHTML/CSSはそのまま、表示する箱の形だけ変えている。
   // 枠の左右に生まれる余白には、作者プロフィールとおすすめ作品を表示する
-  rotateBtn.addEventListener("click", () => {
-    const active = overlay.classList.toggle("force-portrait");
-    rotateBtn.classList.toggle("active", active);
-    updatePortraitFrameSize();
-    updateSidePanels();
-  });
+  if (rotateBtn) {
+    rotateBtn.addEventListener("click", () => {
+      overlay.classList.remove("force-landscape");
+      landscapeBtn?.classList.remove("active");
+      const active = overlay.classList.toggle("force-portrait");
+      rotateBtn.classList.toggle("active", active);
+      updateFramedSize();
+      updateSidePanels();
+    });
+  }
+
+  // PC画面モード: 縦画面モードと同じ考え方で、今度は16:9のPC画面枠に収める
+  // （逆にPCでウィンドウが横長すぎて上部バーだけ間延びして見える、という指摘への対応）
+  if (landscapeBtn) {
+    landscapeBtn.addEventListener("click", () => {
+      overlay.classList.remove("force-portrait");
+      rotateBtn?.classList.remove("active");
+      const active = overlay.classList.toggle("force-landscape");
+      landscapeBtn.classList.toggle("active", active);
+      updateFramedSize();
+      updateSidePanels();
+    });
+  }
+
   window.addEventListener("resize", () => {
-    if (overlay.classList.contains("force-portrait")) updatePortraitFrameSize();
+    if (overlay.classList.contains("force-portrait") || overlay.classList.contains("force-landscape")) {
+      updateFramedSize();
+    }
   });
+
+  // 全画面表示モード: 上部バー・説明パネルを消して画面いっぱいに表示する。
+  // 戻す導線として右上に小さな半透明ボタンを重ねて出す（Escapeキーでも戻せる）
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", () => enterFullscreenMode());
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("hide-topbar")) {
+      exitFullscreenMode();
+    }
+  });
+
   // 評価とコメントは別々に操作できると誤解されやすかったので、
   // 「レビュー」1つのボタンにまとめた（開く先は同じモーダル。rate-modal.js）
   reviewBtn.addEventListener("click", () => {
@@ -54,6 +89,32 @@ export function initPlayer() {
   if (initialWorkId) {
     openPlayer(initialWorkId, { skipHistory: true });
   }
+}
+
+function enterFullscreenMode() {
+  const overlay = document.getElementById("player-overlay");
+  const body = document.getElementById("player-body");
+  if (!overlay || !body || overlay.classList.contains("hide-topbar")) return;
+  overlay.classList.add("hide-topbar");
+  const exitBtn = document.createElement("button");
+  exitBtn.type = "button";
+  exitBtn.className = "btn btn-icon player-fs-exit-btn";
+  exitBtn.id = "player-fs-exit-btn";
+  exitBtn.setAttribute("aria-label", "全画面表示を終了");
+  exitBtn.title = "全画面表示を終了（Escキーでも戻れます）";
+  exitBtn.textContent = "⤢";
+  exitBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    exitFullscreenMode();
+  });
+  body.appendChild(exitBtn);
+}
+
+function exitFullscreenMode() {
+  const overlay = document.getElementById("player-overlay");
+  if (!overlay) return;
+  overlay.classList.remove("hide-topbar");
+  document.getElementById("player-fs-exit-btn")?.remove();
 }
 
 export async function openPlayer(workId, { skipHistory = false } = {}) {
@@ -111,6 +172,11 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
       });
   }
 
+  // 新しい作品を開くときは、前の作品で選んでいた表示モードを引きずらない
+  overlay.classList.remove("force-landscape", "hide-topbar");
+  document.getElementById("player-landscape-btn")?.classList.remove("active");
+  document.getElementById("player-fs-exit-btn")?.remove();
+
   // iframeはここで初めて生成する。既存があれば先に破棄してから作り直す
   frameWrap.innerHTML = "";
   const iframe = document.createElement("iframe");
@@ -124,7 +190,7 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
   iframe.setAttribute("loading", "eager");
   frameWrap.appendChild(iframe);
 
-  updatePortraitFrameSize();
+  updateFramedSize();
   updateSidePanels();
 
   if (!skipHistory) {
@@ -135,33 +201,37 @@ export async function openPlayer(workId, { skipHistory = false } = {}) {
   recordView(work.id);
 }
 
-// 縦画面モードのスマホ枠のピクセルサイズを計算する。
+// 縦画面（スマホ疑似）/ PC画面モードの枠のピクセルサイズを計算する。
 // CSSのaspect-ratioだけに任せると、flexアイテムとしての幅が確定せず
 // 枠が正しく表示されないブラウザがあったため、JSで確実に計算する。
 const PORTRAIT_ASPECT = 9 / 16;
+const LANDSCAPE_ASPECT = 16 / 9;
 
-function updatePortraitFrameSize() {
+function updateFramedSize() {
   const overlay = document.getElementById("player-overlay");
   const frameWrap = document.getElementById("player-frame-wrap");
   if (!overlay || !frameWrap) return;
 
-  if (!overlay.classList.contains("force-portrait")) {
+  const isPortrait = overlay.classList.contains("force-portrait");
+  const isLandscape = overlay.classList.contains("force-landscape");
+  if (!isPortrait && !isLandscape) {
     frameWrap.style.width = "";
     frameWrap.style.height = "";
     return;
   }
+  const aspect = isPortrait ? PORTRAIT_ASPECT : LANDSCAPE_ASPECT;
 
   const body = document.getElementById("player-body") || frameWrap.parentElement;
   const rect = body.getBoundingClientRect();
   const margin = 32; // 枠の周りに少し余白を残す
   const availW = Math.max(240, rect.width - margin);
-  const availH = Math.max(320, rect.height - margin);
+  const availH = Math.max(240, rect.height - margin);
 
-  let h = availH;
-  let w = h * PORTRAIT_ASPECT;
-  if (w > availW) {
-    w = availW;
-    h = w / PORTRAIT_ASPECT;
+  let w = availW;
+  let h = w / aspect;
+  if (h > availH) {
+    h = availH;
+    w = h * aspect;
   }
 
   frameWrap.style.width = `${Math.round(w)}px`;
@@ -287,6 +357,7 @@ export function closePlayer({ skipHistory = false } = {}) {
   const frameWrap = document.getElementById("player-frame-wrap");
   const authorLinkEl = document.getElementById("player-author-link");
   const rotateBtn = document.getElementById("player-rotate-btn");
+  const landscapeBtn = document.getElementById("player-landscape-btn");
   const descDetailsEl = document.getElementById("player-desc");
   const descTextEl = document.getElementById("player-desc-text");
 
@@ -299,8 +370,10 @@ export function closePlayer({ skipHistory = false } = {}) {
     descDetailsEl.open = false;
     descTextEl.textContent = "";
   }
-  overlay.classList.remove("force-portrait");
+  overlay.classList.remove("force-portrait", "force-landscape", "hide-topbar");
   rotateBtn.classList.remove("active");
+  landscapeBtn?.classList.remove("active");
+  document.getElementById("player-fs-exit-btn")?.remove();
   frameWrap.style.width = "";
   frameWrap.style.height = "";
   const leftEl = document.getElementById("player-side-left");

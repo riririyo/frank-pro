@@ -28,6 +28,8 @@
       </div>
       <div class="player-actions">
         <button id="player-rotate-btn" class="btn player-action-btn player-rotate-btn" type="button" title="PCでスマホ用ゲームを縦画面で表示">縦画面</button>
+        <button id="player-landscape-btn" class="btn player-action-btn player-landscape-btn" type="button" title="PC画面サイズの枠に収めて表示">PC画面</button>
+        <button id="player-fullscreen-btn" class="btn player-action-btn" type="button" title="上部バーを消して全画面表示">全画面</button>
         <button id="player-review-btn" class="btn player-action-btn" type="button">レビュー</button>
         <button id="player-close" class="btn btn-icon" aria-label="閉じる">✕</button>
       </div>
@@ -48,7 +50,9 @@
     <div class="rate-modal">
       <div class="rate-modal-header">
         <span class="rate-modal-title" id="rate-modal-title"></span>
-        <button id="rate-modal-close" class="btn btn-icon" aria-label="閉じる">✕</button>
+        <div class="rate-modal-header-actions">
+          <button id="rate-modal-close" class="btn btn-icon" aria-label="閉じる">✕</button>
+        </div>
       </div>
       <div class="rate-modal-body">
         <div id="rate-modal-rating"></div>
@@ -61,6 +65,8 @@
     import { initAuthorPage } from "./js/author.js";
     import { initPlayer } from "./js/player.js";
     import { initRateModal } from "./js/rate-modal.js";
+    import { initThemeToggle } from "./js/theme.js";
+    initThemeToggle();
     initAuthorPage();
     initPlayer();
     initRateModal();

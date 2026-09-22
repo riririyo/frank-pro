@@ -10,6 +10,7 @@
 // だけで完結させている。
 
 import { supabase } from "./supabaseClient.js";
+import { buildShareButton } from "./share.js";
 
 const REASONS = [
   { value: "spam", label: "スパム・宣伝目的" },
@@ -26,7 +27,7 @@ export function openReportModal(workId, title) {
     <div class="thumb-crop-modal">
       <div class="thumb-crop-header">
         <span>作品を通報</span>
-        <button type="button" class="btn btn-icon" data-action="cancel" aria-label="閉じる">✕</button>
+        <div class="thumb-crop-header-actions"></div>
       </div>
       <p class="form-hint">「${escapeHtml(title ?? "")}」を通報します。内容は管理者のみが確認します。</p>
       <div class="report-reason-list"></div>
@@ -39,6 +40,16 @@ export function openReportModal(workId, title) {
     </div>
   `;
   document.body.appendChild(overlay);
+
+  const headerActionsEl = overlay.querySelector(".thumb-crop-header-actions");
+  headerActionsEl.appendChild(buildShareButton(workId, title));
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "btn btn-icon";
+  closeBtn.dataset.action = "cancel";
+  closeBtn.setAttribute("aria-label", "閉じる");
+  closeBtn.textContent = "✕";
+  headerActionsEl.appendChild(closeBtn);
 
   const reasonListEl = overlay.querySelector(".report-reason-list");
   for (const r of REASONS) {

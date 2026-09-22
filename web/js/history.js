@@ -10,6 +10,7 @@ import { getPlayHistory, clearPlayHistory } from "./visitor.js";
 import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
 import { fetchDisplayNames, buildWorkThumbAuthorLink } from "./author-link.js";
+import { fetchCommentCounts } from "./comment-count.js";
 
 const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
 
@@ -74,12 +75,15 @@ async function renderHistoryPage() {
 
   const grid = document.createElement("div");
   grid.className = "work-grid";
-  const names = await fetchDisplayNames(orderedWorks.map((w) => w.author_id));
-  for (const w of orderedWorks) grid.appendChild(buildCard(w, names));
+  const [names, commentCounts] = await Promise.all([
+    fetchDisplayNames(orderedWorks.map((w) => w.author_id)),
+    fetchCommentCounts(orderedWorks.map((w) => w.id)),
+  ]);
+  for (const w of orderedWorks) grid.appendChild(buildCard(w, names, commentCounts));
   root.appendChild(grid);
 }
 
-function buildCard(work, authorNames) {
+function buildCard(work, authorNames, commentCounts) {
   const card = document.createElement("div");
   card.className = "work-card";
   card.addEventListener("click", () => openPlayer(work.id));
@@ -124,7 +128,8 @@ function buildCard(work, authorNames) {
   stats.className = "work-stats";
   const ratingText =
     work.rating_count > 0 ? `<span class="stars">★</span> ${work.rating_avg.toFixed(1)}` : "評価なし";
-  stats.innerHTML = `${ratingText} · ${work.access_count}回`;
+  const commentCount = commentCounts?.get(work.id) ?? 0;
+  stats.innerHTML = `${ratingText}（💬 ${commentCount}）· ${work.access_count}回`;
 
   const metaRow = document.createElement("div");
   metaRow.className = "work-meta-row";

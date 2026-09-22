@@ -1,8 +1,10 @@
 // frank pro — 作品カードの「⋮」メニュー
 //
-// 「評価する」「コメントを見る」「作者のページへ」の3項目。
-// 以前は「レビューする」（評価+コメントが同じモーダル）1本だったが、
-// 評価だけ・コメントだけを見たい場合にも対応できるよう分割した。
+// 「レビューする」（評価とコメントを同時にできる。rate-modal.jsのmode:"both"）
+// 「作者のページへ」「通報する」の3項目。
+// 以前は「評価する」「コメントを見る」に分かれていたが、評価とコメントを
+// 別々にしか操作できないと誤解されやすかったので、プレイ画面の「レビュー」
+// ボタンと同じ1本の導線に統一した（rate-modal.jsのmode既定値がそのまま使える）。
 // 作者ページへの導線はカード左上の作者名リンク（author-link.js）にもあるが、
 // ⋮からも行けるようにしてある（重複していてよい、という運用判断）。
 // 一覧（listing.js）・作者ページ（author.js）・履歴（history.js）の
@@ -43,25 +45,15 @@ export function buildCardMenuButton(card, work) {
     menu.dataset.workId = String(work.id);
     menu.addEventListener("click", (ev) => ev.stopPropagation());
 
-    const rateBtn = document.createElement("button");
-    rateBtn.type = "button";
-    rateBtn.textContent = "評価する";
-    rateBtn.addEventListener("click", (ev) => {
+    const reviewBtn = document.createElement("button");
+    reviewBtn.type = "button";
+    reviewBtn.textContent = "レビューする（評価・コメント）";
+    reviewBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
       closeOpenMenu();
-      openRateModal(work.id, work.title, { mode: "rating" });
+      openRateModal(work.id, work.title);
     });
-    menu.appendChild(rateBtn);
-
-    const commentBtn = document.createElement("button");
-    commentBtn.type = "button";
-    commentBtn.textContent = "コメントを見る";
-    commentBtn.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      closeOpenMenu();
-      openRateModal(work.id, work.title, { mode: "comments" });
-    });
-    menu.appendChild(commentBtn);
+    menu.appendChild(reviewBtn);
 
     if (work.author_id) {
       const authorBtn = document.createElement("button");
