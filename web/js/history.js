@@ -11,8 +11,7 @@ import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
 import { fetchDisplayNames, buildWorkThumbAuthorLink } from "./author-link.js";
 import { fetchCommentCounts } from "./comment-count.js";
-
-const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
+import { GENRE_LABELS } from "./genres.js";
 
 export async function initHistoryPage() {
   await renderHistoryPage();
@@ -32,7 +31,7 @@ async function renderHistoryPage() {
   const ids = history.map((e) => e.id);
   const { data: works, error } = await supabase
     .from("works")
-    .select("id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, author_id")
+    .select("id, title, description, thumbnail_path, category, mobile_ok, has_sound, access_count, rating_count, rating_avg, author_id")
     .in("id", ids)
     .eq("status", "published");
 
@@ -114,6 +113,11 @@ function buildCard(work, authorNames, commentCounts) {
     genreBadge.textContent = GENRE_LABELS[work.category];
     thumbWrap.appendChild(genreBadge);
   }
+
+  const deviceSoundBadge = document.createElement("div");
+  deviceSoundBadge.className = "device-sound-badge";
+  deviceSoundBadge.textContent = `${work.mobile_ok === false ? "🖥" : "📱"}${work.has_sound ? " 🔊" : ""}`;
+  thumbWrap.appendChild(deviceSoundBadge);
 
   const meta = document.createElement("div");
   meta.className = "work-meta";

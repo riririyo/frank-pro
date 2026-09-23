@@ -295,38 +295,20 @@ img { max-width: 100%; display: block; }
   border-color: transparent;
 }
 
-/* ============ タグ絞り込み ============ */
+/* ============ スマホ対応絞り込みスイッチ ============ */
 .tag-filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   padding: 0 max(16px, env(safe-area-inset-left)) 12px;
 }
-.tag-filter-row { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
-.tag-filter-label {
-  flex: none;
-  font-size: 12px;
-  color: var(--text-secondary);
-  padding: 6px 0;
-}
-.tag-filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-.tag-filter-tab {
-  flex: none;
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-size: 12px;
+.mobile-only-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border);
   cursor: pointer;
-  white-space: nowrap;
 }
-.tag-filter-tab[aria-pressed="true"] {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border-color: transparent;
-}
+.mobile-only-switch input[type="checkbox"] { accent-color: var(--accent); }
 
 /* ============ グリッド一覧 ============ */
 
@@ -402,6 +384,17 @@ img { max-width: 100%; display: block; }
   padding-top: 20px;
   box-sizing: border-box;
   background: linear-gradient(135deg, #d1d1d6, #f5f5f7);
+}
+.device-sound-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  z-index: 2;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1;
 }
 .played-badge {
   position: absolute;
@@ -968,24 +961,30 @@ img { max-width: 100%; display: block; }
 
 /* HTMLコードの直接貼り付け（ファイル添付の代わり）。貼り付けた全文を
    画面いっぱいに表示し続ける必要はないので、高さを抑えてスクロールにする */
-.paste-html {
+.paste-html,
+.ai-merge-prompt {
   margin-top: 8px;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-elevated);
 }
-.paste-html summary {
+.paste-html summary,
+.ai-merge-prompt summary {
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   list-style: none;
 }
-.paste-html summary::-webkit-details-marker { display: none; }
-.paste-html summary::before { content: "▸ "; }
-.paste-html[open] summary::before { content: "▾ "; }
-.paste-html textarea {
+.paste-html summary::-webkit-details-marker,
+.ai-merge-prompt summary::-webkit-details-marker { display: none; }
+.paste-html summary::before,
+.ai-merge-prompt summary::before { content: "▸ "; }
+.paste-html[open] summary::before,
+.ai-merge-prompt[open] summary::before { content: "▾ "; }
+.paste-html textarea,
+.ai-merge-prompt textarea {
   width: 100%;
   min-height: 120px;
   max-height: 280px;
@@ -998,7 +997,8 @@ img { max-width: 100%; display: block; }
   color: var(--text);
   resize: vertical;
 }
-.paste-html .btn { margin-top: 8px; }
+.paste-html .btn,
+.ai-merge-prompt .btn { margin-top: 8px; }
 
 /* プレイ画面と同じ「縦画面/PC画面」切り替えを投稿時のプレビューにも用意した */
 .preview-mode-tabs {
@@ -1071,25 +1071,15 @@ img { max-width: 100%; display: block; }
   background: color-mix(in srgb, var(--accent) 12%, var(--surface-elevated));
 }
 
-.tag-select-group { display: flex; flex-direction: column; gap: 6px; }
-.tag-select { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
-.tag-option {
-  display: flex;
+.mobile-ok-option {
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface-elevated);
-  font-size: 13px;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
 }
-.tag-option input[type="checkbox"] { accent-color: var(--accent); }
-.tag-option:has(input:checked) {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface-elevated));
-}
+.mobile-ok-option input[type="checkbox"] { accent-color: var(--accent); }
 
 /* ============ 静的ページ（規約・ガイドライン） ============ */
 

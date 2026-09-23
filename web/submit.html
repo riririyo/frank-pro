@@ -35,20 +35,15 @@
 
       <div class="form-field">
         <label>ジャンル</label>
-        <div class="genre-select">
-          <label class="genre-option"><input type="radio" name="genre" value="game" checked /> ゲーム</label>
-          <label class="genre-option"><input type="radio" name="genre" value="product" /> プロダクト</label>
-        </div>
+        <div class="genre-select" id="genre-select"></div>
       </div>
 
       <div class="form-field">
-        <label>タグ（任意・最大6個）</label>
-        <div class="tag-select-group">
-          <p class="form-hint">操作環境</p>
-          <div id="tag-select-operation" class="tag-select"></div>
-          <p class="form-hint">内容</p>
-          <div id="tag-select-content" class="tag-select"></div>
-        </div>
+        <label class="mobile-ok-option">
+          <input type="checkbox" id="mobile-ok-input" checked />
+          📱 スマホで遊べる
+        </label>
+        <p class="form-hint">タップだけで遊べない場合（キーボードやマウスが必要など）はチェックを外してください。</p>
       </div>
 
       <div class="form-field">
@@ -59,6 +54,14 @@
           <textarea id="html-paste-input" rows="6" placeholder="ここにHTMLコードを貼り付けてください"></textarea>
           <button type="button" id="html-paste-apply-btn" class="btn">このコードを使う</button>
           <p id="html-paste-hint" class="form-hint"></p>
+        </details>
+        <details class="ai-merge-prompt">
+          <summary>複数ファイルに分かれてしまった場合：AIに1ファイルへまとめてもらうプロンプト</summary>
+          <textarea id="ai-merge-prompt-text" rows="6" readonly></textarea>
+          <button type="button" id="ai-merge-prompt-copy-btn" class="btn">コピーする</button>
+          <p id="ai-merge-prompt-hint" class="form-hint">
+            ChatGPTやClaudeなどにコードと一緒に貼り付けると、1つのHTMLファイルにまとめてもらえます。
+          </p>
         </details>
         <div id="upload-warnings"></div>
       </div>
@@ -90,7 +93,7 @@
           <label><input type="checkbox" /> HTML 1ファイルにまとまっている</label>
           <label><input type="checkbox" /> 外部URLの読み込みがない（画像・フォント・音・ライブラリすべて）</label>
           <label><input type="checkbox" /> localStorage / Cookie を使っていない（または try-catch で囲んである）</label>
-          <label><input type="checkbox" /> タップとスワイプだけで操作できる（できない場合は説明文に明記した）</label>
+          <label><input type="checkbox" /> スマホで遊べない場合は「📱 スマホで遊べる」のチェックを外した（投稿はできます）</label>
           <label><input type="checkbox" /> 使った素材のライセンスを確認した。権利者のあるキャラクター・ロゴ・音源が入っていない</label>
         </div>
       </div>

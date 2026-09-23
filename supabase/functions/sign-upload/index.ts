@@ -21,29 +21,18 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const WORKS_BUCKET = "works";
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB（docs/security-design.md, posting-guideline-draft.md）
-const VALID_CATEGORIES = ["game", "product"];
 
-// web/js/tags.js の ALL_TAG_VALUES と同じ内容（Denoはweb/js/*をimportできないため複製）。
+// web/js/genres.js の GENRE_VALUES と同じ内容（Denoはweb/js/*をimportできないため複製）。
 // 追加・削除した場合は両方直すこと。
-const VALID_TAGS = [
-  "touch",
-  "keyboard_required",
-  "mouse_required",
-  "controller",
-  "pc_only",
-  "sound",
-  "rpg",
-  "puzzle",
-  "action",
-  "shooting",
-  "rhythm",
-  "casual",
-  "simulation",
-  "tool",
-  "prototype",
-  "joke",
-];
-const MAX_TAGS = 6;
+const VALID_CATEGORIES = ["action", "puzzle", "adventure", "simulation", "casual", "tool", "other"];
+
+// 音声有無(has_sound)の自動判定について:
+// 仕様上は「アップロードされたHTML本文を検査して自動判定」だが、このEdge Functionは
+// 署名付きアップロードURLを発行するだけで、実際のファイル本体（クライアントが
+// supabase.storage.uploadToSignedUrl()で直接Storageに送る）を一切受け取らない。
+// そのため実HTMLの検査はクライアント側（web/js/submit.js、file.text()で既に読んでいる）
+// で行い、判定結果のbooleanだけをここに送ってもらう形にした（file_size_bytesと同じ
+// 自己申告の信頼モデル。has_soundは表示上の目安バッジなので厳密な検証は不要）。
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*", // 本番では frank pro の実ドメインに絞る
@@ -90,7 +79,8 @@ Deno.serve(async (req) => {
     description?: string;
     category?: string;
     file_size_bytes?: number;
-    tags?: string[];
+    mobile_ok?: boolean;
+    has_sound?: boolean;
   };
   try {
     body = await req.json();
@@ -100,11 +90,10 @@ Deno.serve(async (req) => {
 
   const title = (body.title ?? "").trim().slice(0, 100);
   const description = (body.description ?? "").trim().slice(0, 2000);
-  const category = VALID_CATEGORIES.includes(body.category ?? "") ? body.category! : "game";
+  const category = VALID_CATEGORIES.includes(body.category ?? "") ? body.category! : "other";
   const fileSize = Number(body.file_size_bytes ?? 0);
-  const tags = Array.isArray(body.tags)
-    ? [...new Set(body.tags.filter((t) => VALID_TAGS.includes(t)))].slice(0, MAX_TAGS)
-    : [];
+  const mobileOk = body.mobile_ok !== false; // 未指定はtrue（デフォルトON）
+  const hasSound = body.has_sound === true;
 
   if (!title) {
     return json({ error: "title is required" }, 400);
@@ -126,7 +115,8 @@ Deno.serve(async (req) => {
     title,
     description,
     category,
-    tags,
+    mobile_ok: mobileOk,
+    has_sound: hasSound,
     file_path: objectPath,
     file_size_bytes: fileSize,
     status: "published",

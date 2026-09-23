@@ -10,18 +10,16 @@ import { buildCardMenuButton } from "./card-menu.js";
 import { buildWorkDescEl } from "./work-desc.js";
 import { fetchDisplayNames, buildWorkThumbAuthorLink } from "./author-link.js";
 import { fetchCommentCounts } from "./comment-count.js";
-import { OPERATION_TAGS, CONTENT_TAGS } from "./tags.js";
+import { GENRES, GENRE_LABELS } from "./genres.js";
 
 const PAGE_SIZE = 24;
 
-const GENRE_LABELS = { game: "ゲーム", product: "プロダクト" };
-
 // ジャンル絞り込み。「すべて」はcategoryで絞らない特別扱い
-const GENRE_FILTERS = [
-  { key: "all", label: "すべて" },
-  { key: "game", label: "ゲーム" },
-  { key: "product", label: "プロダクト" },
-];
+const GENRE_FILTERS = [{ key: "all", label: "すべて" }, ...GENRES.map((g) => ({ key: g.value, label: g.label }))];
+
+// スマホからのアクセスはデフォルトで「スマホで遊べるものだけ」をON、PCからはOFF
+// （PCで見ている人はPC専用作品も遊べるため）
+const IS_MOBILE_DEVICE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // 初期表示は「アクセス数」順（新規順だと0本〜数本の時期に荒れやすいため）。
 // 並び順自体は引き続き4種から選べる
@@ -37,7 +35,7 @@ let currentGenre = GENRE_FILTERS[0];
 let currentOffset = 0;
 let loading = false;
 let reachedEnd = false;
-const currentTags = new Set();
+let mobileOnly = IS_MOBILE_DEVICE;
 
 export function initListing() {
   const tabsEl = document.getElementById("sort-tabs");
@@ -64,7 +62,7 @@ export function initListing() {
     }
   }
 
-  renderTagFilters();
+  renderMobileSwitch();
 
   window.addEventListener("scroll", () => {
     if (loading || reachedEnd) return;
@@ -86,47 +84,25 @@ function switchSort(opt) {
   loadInitial();
 }
 
-function renderTagFilters() {
+function renderMobileSwitch() {
   const groupEl = document.getElementById("tag-filter-group");
   if (!groupEl) return;
   groupEl.innerHTML = "";
 
-  const buildRow = (label, tags) => {
-    const row = document.createElement("div");
-    row.className = "tag-filter-row";
-    const labelEl = document.createElement("span");
-    labelEl.className = "tag-filter-label";
-    labelEl.textContent = label;
-    row.appendChild(labelEl);
-    const tabsEl = document.createElement("div");
-    tabsEl.className = "tag-filter-tabs";
-    for (const tag of tags) {
-      const btn = document.createElement("button");
-      btn.className = "tag-filter-tab";
-      btn.textContent = tag.label;
-      btn.setAttribute("aria-pressed", "false");
-      btn.addEventListener("click", () => toggleTagFilter(tag.value, btn));
-      tabsEl.appendChild(btn);
-    }
-    row.appendChild(tabsEl);
-    return row;
-  };
-
-  groupEl.appendChild(buildRow("操作環境", OPERATION_TAGS));
-  groupEl.appendChild(buildRow("内容", CONTENT_TAGS));
-}
-
-function toggleTagFilter(value, btn) {
-  if (currentTags.has(value)) {
-    currentTags.delete(value);
-    btn.setAttribute("aria-pressed", "false");
-  } else {
-    currentTags.add(value);
-    btn.setAttribute("aria-pressed", "true");
-  }
-  currentOffset = 0;
-  reachedEnd = false;
-  loadInitial();
+  const label = document.createElement("label");
+  label.className = "mobile-only-switch";
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = mobileOnly;
+  checkbox.addEventListener("change", () => {
+    mobileOnly = checkbox.checked;
+    currentOffset = 0;
+    reachedEnd = false;
+    loadInitial();
+  });
+  label.appendChild(checkbox);
+  label.appendChild(document.createTextNode(" 📱 スマホで遊べるものだけ"));
+  groupEl.appendChild(label);
 }
 
 function switchGenre(opt) {
@@ -177,15 +153,15 @@ async function fetchPage() {
   let query = supabase
     .from("works")
     .select(
-      "id, title, description, thumbnail_path, category, access_count, rating_count, rating_avg, rating_bayes, created_at, author_id"
+      "id, title, description, thumbnail_path, category, mobile_ok, has_sound, access_count, rating_count, rating_avg, rating_bayes, created_at, author_id"
     )
     .eq("status", "published");
 
   if (currentGenre.key !== "all") {
     query = query.eq("category", currentGenre.key);
   }
-  if (currentTags.size > 0) {
-    query = query.contains("tags", [...currentTags]);
+  if (mobileOnly) {
+    query = query.eq("mobile_ok", true);
   }
 
   const { data, error } = await query
@@ -235,6 +211,11 @@ function buildCard(work, authorNames, commentCounts) {
     genreBadge.textContent = GENRE_LABELS[work.category];
     thumbWrap.appendChild(genreBadge);
   }
+
+  const deviceSoundBadge = document.createElement("div");
+  deviceSoundBadge.className = "device-sound-badge";
+  deviceSoundBadge.textContent = `${work.mobile_ok === false ? "🖥" : "📱"}${work.has_sound ? " 🔊" : ""}`;
+  thumbWrap.appendChild(deviceSoundBadge);
 
   if (played.has(work.id)) {
     const badge = document.createElement("div");

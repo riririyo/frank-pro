@@ -56,26 +56,21 @@ export async function handleOgp(context) {
       ? rawDescription.slice(0, 140)
       : "frank htmlで今すぐ遊べる投稿ゲーム・プロダクト";
     const pageUrl = `${url.origin}/?work=${encodeURIComponent(work.id)}`;
-    const image = work.thumbnail_path || null;
+    // サムネイル未生成（投稿直後で日次バッチ未実行）の場合は、
+    // 画像なしの素っ気ないテキストカードにするより、サイト共通の1枚を出す方がマシ
+    const image = work.thumbnail_path || `${url.origin}/assets/og-default.png`;
 
-    let headTags = `
+    const headTags = `
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="frank html">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(pageUrl)}">
-<meta name="twitter:title" content="${esc(title)}">
-<meta name="twitter:description" content="${esc(description)}">`;
-
-    if (image) {
-      headTags += `
 <meta property="og:image" content="${esc(image)}">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${esc(image)}">`;
-    } else {
-      headTags += `
-<meta name="twitter:card" content="summary">`;
-    }
 
     class TitleRewriter {
       element(el) {

@@ -15,15 +15,28 @@ import {
   uploadThumbnail as uploadThumbnailShared,
 } from "./thumbnail.js";
 import { cropThumbnailImage } from "./thumbnail-crop.js";
-import { OPERATION_TAGS, CONTENT_TAGS } from "./tags.js";
+import { GENRES } from "./genres.js";
 
 const MAX_SIZE = CONFIG.MAX_FILE_SIZE_BYTES;
+
+// 音声有無(has_sound)は投稿者に自己申告させず、選択したHTML本文から自動判定する
+// （sign-upload Edge Functionはアップロードされる実ファイルを受け取らないため、
+// ここで判定してsign-upload呼び出し時にbooleanだけを送る）。
+const SOUND_PATTERNS = [/<audio[\s>]/i, /AudioContext/, /webkitAudioContext/, /new\s+Audio\s*\(/];
+
+const AI_MERGE_PROMPT = `あなたが今書いたコード（HTML/CSS/JS）を、単一のHTMLファイル1つにまとめてください。
+- CSSは<style>タグに、JavaScriptは<script>タグに直接埋め込んでください（外部ファイルの<link>/<script src>は使わない）。
+- 画像・フォント・音声などのバイナリ素材は data URI としてインライン化してください。
+- localStorage / sessionStorage / Cookie を使っている場合は、必ず try-catch で囲んでください（使えない環境でもエラーで停止しないように）。
+- 外部URLへの fetch / XMLHttpRequest / WebSocket 通信は行わないでください（配信環境でブロックされ動作しません）。
+- 完成したら、1つの .html ファイルとして出力してください。`;
 
 let selectedFile = null;
 let selectedThumbnailFile = null;
 let hasPreviewedOnce = false;
 let previewUrl = null;
 let thumbnailPreviewUrl = null;
+let detectedHasSound = false;
 
 export async function initSubmitPage() {
   const user = await requireAuth();
@@ -44,7 +57,8 @@ export async function initSubmitPage() {
   const previewModeTabs = document.getElementById("preview-mode-tabs");
   const mobilePreview = document.getElementById("mobile-preview");
 
-  renderTagCheckboxes();
+  renderGenreOptions();
+  initAiMergePrompt();
 
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files[0];
@@ -102,33 +116,46 @@ export async function initSubmitPage() {
   });
 }
 
-function renderTagCheckboxes() {
-  const opEl = document.getElementById("tag-select-operation");
-  const contentEl = document.getElementById("tag-select-content");
-  if (!opEl || !contentEl) return;
+function renderGenreOptions() {
+  const genreEl = document.getElementById("genre-select");
+  if (!genreEl) return;
 
-  for (const tag of OPERATION_TAGS) {
+  GENRES.forEach((genre, i) => {
     const label = document.createElement("label");
-    label.className = "tag-option";
-    const checked = tag.value === "touch" ? " checked" : "";
-    label.innerHTML = `<input type="checkbox" name="tags" value="${tag.value}"${checked} /> ${escapeHtml(tag.label)}`;
-    opEl.appendChild(label);
-  }
-  for (const tag of CONTENT_TAGS) {
-    const label = document.createElement("label");
-    label.className = "tag-option";
-    label.innerHTML = `<input type="checkbox" name="tags" value="${tag.value}" /> ${escapeHtml(tag.label)}`;
-    contentEl.appendChild(label);
-  }
+    label.className = "genre-option";
+    const checked = i === 0 ? " checked" : "";
+    label.innerHTML = `<input type="radio" name="genre" value="${genre.value}"${checked} /> ${escapeHtml(genre.label)}`;
+    genreEl.appendChild(label);
+  });
 }
 
-function getSelectedTags() {
-  return [...document.querySelectorAll('input[name="tags"]:checked')].map((el) => el.value).slice(0, 6);
+function initAiMergePrompt() {
+  const textarea = document.getElementById("ai-merge-prompt-text");
+  const copyBtn = document.getElementById("ai-merge-prompt-copy-btn");
+  const hint = document.getElementById("ai-merge-prompt-hint");
+  if (!textarea || !copyBtn) return;
+
+  textarea.value = AI_MERGE_PROMPT;
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(AI_MERGE_PROMPT);
+      const original = copyBtn.textContent;
+      copyBtn.textContent = "コピーしました";
+      setTimeout(() => {
+        copyBtn.textContent = original;
+      }, 1500);
+    } catch {
+      textarea.select();
+      if (hint) hint.textContent = "コピーできなかったので、テキストエリアを選択しました。手動でコピーしてください。";
+    }
+  });
 }
 
 async function handleFileSelected(file, { previewFrame, warningsEl, previewHint }) {
   warningsEl.innerHTML = "";
   hasPreviewedOnce = false;
+  detectedHasSound = false;
 
   if (!file.name.toLowerCase().endsWith(".html")) {
     warningsEl.innerHTML = "<p class='form-hint error'>HTMLファイルを選んでください。</p>";
@@ -144,6 +171,7 @@ async function handleFileSelected(file, { previewFrame, warningsEl, previewHint 
   selectedFile = file;
 
   const text = await file.text();
+  detectedHasSound = SOUND_PATTERNS.some((re) => re.test(text));
   renderStaticWarnings(text, warningsEl);
 
   if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -213,10 +241,12 @@ async function handleThumbnailSelected(file, { thumbnailPreviewEl, thumbnailHint
 function renderStaticWarnings(sourceText, warningsEl) {
   const warnings = [];
 
-  // これは合否判定ではなく気づいてもらうための警告（posting-guideline-draft.md 3章）
+  // これは合否判定ではなく気づいてもらうための注意（posting-guideline-draft.md 3章）。
+  // try-catchで対策済みなら投稿をブロックしないので、その旨を明記して不安にさせないようにする
+  // （改善点メモ2026-09-23 項目0：文字列を見つけただけで警告が出て、対策済みの投稿者も不安になっていたため）。
   if (/localStorage|sessionStorage|document\.cookie/.test(sourceText)) {
     warnings.push(
-      "localStorage / sessionStorage / Cookie の使用が検出されました。配信環境ではこれらに触れずSecurityErrorで停止します。try-catchで囲むか、使わない設計にしてください。"
+      "localStorage / sessionStorage / Cookie の使用が検出されました。try-catchで囲まれていれば投稿・動作に問題はありません。ただし配信環境ではこれらの機能自体は使えないため、セーブデータやベスト記録などは保存されません（毎回リセットされます）。"
     );
   }
   if (/fetch\s*\(|XMLHttpRequest|WebSocket\s*\(/.test(sourceText)) {
@@ -243,8 +273,9 @@ async function handleSubmit({ submitBtn }) {
   const title = document.getElementById("title-input").value.trim();
   const description = document.getElementById("description-input").value.trim();
   const genreInput = document.querySelector('input[name="genre"]:checked');
-  const category = genreInput ? genreInput.value : "game";
-  const tags = getSelectedTags();
+  const category = genreInput ? genreInput.value : "other";
+  const mobileOkInput = document.getElementById("mobile-ok-input");
+  const mobileOk = mobileOkInput ? mobileOkInput.checked : true;
   const checklistBoxes = [...document.querySelectorAll(".checklist input[type=checkbox]")];
 
   if (!selectedFile) {
@@ -284,7 +315,8 @@ async function handleSubmit({ submitBtn }) {
         title,
         description,
         category,
-        tags,
+        mobile_ok: mobileOk,
+        has_sound: detectedHasSound,
         file_size_bytes: selectedFile.size,
       }),
     });
